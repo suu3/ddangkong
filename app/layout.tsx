@@ -1,8 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-// import { Inter } from "next/font/google";
-
-// const inter = Inter({ subsets: ["latin"] });
+import Navigation from "@/components/@layout/Navigation";
 
 export const metadata: Metadata = {
   title: "심심풀이 땅콩",
@@ -15,9 +13,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-      {/* <body className={inter.className}>{children}</body> */}
+    <html lang="ko">
+      <body>
+        <header>
+          <Navigation />
+        </header>
+        <main className="main">{children}</main>
+      </body>
     </html>
   );
 }
