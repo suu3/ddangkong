@@ -2,10 +2,10 @@ import clsx from 'clsx';
 import styles from './unique-text.module.css';
 
 interface UniqueTextProps {
-  Tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
+  Tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'div';
   children: React.ReactNode;
   font?: 'sans' | 'uhbee';
-  size?: 'sm' | 'md' | 'lg' | '';
+  size?: 'sm' | 'md' | 'ml' | 'lg' | '';
   className?: string;
   style?: React.CSSProperties;
 }

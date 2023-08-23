@@ -1,5 +1,6 @@
 'use client';
 
+import Loading from '@/domains/coffee/Loading';
 import Order from '@/domains/coffee/Order';
 import Shuffle from '@/domains/coffee/Shuffle';
 import Start from '@/domains/coffee/Start';
@@ -11,7 +12,8 @@ export default function Coffee() {
     <div>
       {/* <Start /> */}
       {/* <Order /> */}
-      <Shuffle />
+      {/* <Shuffle /> */}
+      <Loading />
     </div>
   );
 }
