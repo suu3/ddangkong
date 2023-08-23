@@ -3,5 +3,9 @@ export default function CoffeeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <section className="flex flex-col justify-between items-center">
+      {children}
+    </section>
+  );
 }

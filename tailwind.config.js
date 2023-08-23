@@ -1,13 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    //    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    "./domains/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     colors: {
-      chocolate: "#3D3131",
+      chocolate: "var(--chocolate)",
     },
     fontFamily: {
       pretendard: "Pretendard-Regular",

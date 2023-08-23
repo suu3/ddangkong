@@ -15,22 +15,35 @@
   --global-max-width: 31.25rem;
   --global-navigation-height: 3.125rem;
   --default-main-padding: 2rem 1rem;
+
+  --nav-z-index: 1000;
+
+  /* colors */
+  --chocolate: #3d3131;
+  --milk-chocolate: #655049;
 }
 
 body {
   min-width: var(--global-min-width);
   max-width: var(--global-max-width);
   margin: auto;
-  position: relative;
-  height: 100vh;
+  transform: translate3d(0, 0, 0);
+
   overflow: hidden;
+  scroll-behavior: smooth;
 }
 
 .main {
-  position: relative;
-  padding: var(--default-main-padding);
-  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  scroll-behavior: smooth;
+  & {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera*/
+  }
+
+  height: 100vh;
+  padding: var(--global-navigation-height) var(--default-main-padding);
 }

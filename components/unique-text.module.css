@@ -1,0 +1,31 @@
+.common {
+  color: var(--chocolate);
+}
+
+.sans {
+  font-family: "PartialSansKR-Regular";
+
+  &.md {
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 100%; /* 1.125rem */
+    letter-spacing: -0.045rem;
+  }
+
+  &.lg {
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 103.8%; /* 2.076rem */
+  }
+}
+
+.uhbee {
+  font-family: "UhBeeTokki";
+
+  &.md {
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 100%; /* 1.125rem */
+    letter-spacing: -0.045rem;
+  }
+}

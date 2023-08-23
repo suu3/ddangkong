@@ -1,0 +1,23 @@
+.header {
+  position: fixed;
+  top: 0;
+  z-index: var(--nav-z-index);
+  left: 0;
+  right: 0;
+  height: var(--global-navigation-height);
+
+  background-color: #fff;
+  border-bottom: 1px solid var(--chocolate, #3d3131);
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  margin: auto;
+  padding: 0.5rem;
+  align-items: center;
+
+  width: 100%;
+  height: 100%;
+  max-width: var(--global-max-width);
+}
