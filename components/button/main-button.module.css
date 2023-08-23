@@ -25,4 +25,10 @@
     background-color: var(--button-primary);
     color: var(--button-secondary);
   }
+
+  &.outlined {
+    background-color: var(--button-secondary);
+    color: var(--button-primary);
+    border: 1px solid var(--button-primary);
+  }
 }
