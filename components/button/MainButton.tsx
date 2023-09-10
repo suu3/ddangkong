@@ -6,14 +6,24 @@ interface MainButtonProps {
   label: string;
   variant?: 'outlined' | 'contained';
   color?: 'chocolate';
+  disabled?: boolean;
   className?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
 }
 
-const MainButton = ({ onClick, label, variant = 'contained', color = 'chocolate', className }: MainButtonProps) => {
-  const btnCls = clsx(styles['button'], styles[variant], styles[color], className);
+const MainButton = ({
+  onClick,
+  disabled = false,
+  label,
+  variant = 'contained',
+  color = 'chocolate',
+  className,
+}: MainButtonProps) => {
+  const btnCls = clsx(styles['button'], styles[variant], styles[color], className, {
+    // [styles['disabled']]: disabled,
+  });
   return (
-    <button onClick={onClick} className={btnCls}>
+    <button onClick={onClick} className={btnCls} disabled={disabled}>
       {label}
     </button>
   );

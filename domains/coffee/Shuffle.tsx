@@ -6,10 +6,32 @@ import { getDoubleDigitFormat } from '@/lib/utils/format';
 
 interface ShuffleProps {
   handleStep: (type: 'next' | 'prev') => void;
+  cnt: number;
 }
 
-export default function Shuffle({ handleStep }: ShuffleProps) {
-  const cnt = 9;
+export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
+  const divs = [];
+  let currentDivs = [];
+
+  const isNumberDivisibleBy = (n: number, divisor: number) => {
+    return n % divisor === 0;
+  };
+
+  const divisor = 3; //isNumberDivisibleBy(cnt, 2) ? 2 : 3;
+
+  for (let i = 1; i <= cnt; i++) {
+    currentDivs.push(<Lottery key={i} cnt={getDoubleDigitFormat(i)} />);
+
+    if (i % divisor === 0 || i === cnt) {
+      divs.push(
+        <div key={divs.length} className="w-full flex items-center justify-evenly">
+          {currentDivs}
+        </div>
+      );
+      currentDivs = [];
+    }
+  }
+
   return (
     <>
       <BubbleContainer width={234} height={62} className="mt-10 mx-auto ">
@@ -18,11 +40,7 @@ export default function Shuffle({ handleStep }: ShuffleProps) {
         </UniqueText>
       </BubbleContainer>
 
-      <div className="mb-16 grid gap-3 grid-cols-3 grid-rows-t mt-6">
-        {Array.from({ length: cnt }).map((_, idx) => {
-          return <Lottery key={idx} cnt={getDoubleDigitFormat(idx + 1)} />;
-        })}
-      </div>
+      <div className="flex flex-col justify-center align-center mb-16 mt-6 min-h-[20rem]">{divs}</div>
       <div className="flex gap-2">
         <MainButton label="순서 섞기" variant="outlined" color="chocolate" />
         <MainButton label="결과 확인" variant="contained" color="chocolate" onClick={() => handleStep('next')} />
