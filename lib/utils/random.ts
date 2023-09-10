@@ -20,3 +20,10 @@ export function getLottery(total: number, boom: number): number[] {
 
   return result;
 }
+
+//min과 max 사이의 정수를 생성
+export function getRandomInteger(min: number, max: number): number {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}

@@ -1,28 +1,60 @@
 /* 셔플 애니메이션 */
-.enter {
-  opacity: 0;
+.base {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  transition: all 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.enter-active {
-  opacity: 1;
-  transition: opacity 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+.stack {
+  transform: translate(-50%, -50%);
 }
 
-.enter-done {
-  /* transform: translate(50%); */
+.spread {
+  transform: translate(calc(var(--x) * 1%), calc(var(--y) * 1%));
 }
 
-.exit {
-  opacity: 1;
-  /* transform: translate(50%); */
+.bounce-in {
+  animation-duration: 1s;
+  animation-name: bounceIn;
+  animation-iteration-count: infinite;
 }
 
-.exit-active {
-  opacity: 0;
-  /* transform: translate(0); */
-  transition: opacity 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
+@keyframes bounceIn {
+  from,
+  20%,
+  40%,
+  60%,
+  80%,
+  to {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
 
+  0% {
+    transform: scale3d(0.3, 0.3, 0.3);
+  }
+
+  20% {
+    transform: scale3d(1.1, 1.1, 1.1);
+  }
+
+  40% {
+    transform: scale3d(0.9, 0.9, 0.9);
+  }
+
+  60% {
+    transform: scale3d(1.03, 1.03, 1.03);
+  }
+
+  80% {
+    transform: scale3d(0.97, 0.97, 0.97);
+  }
+
+  to {
+    transform: scale3d(1, 1, 1);
+  }
+}
 /* 
 .enter {
   transform: translate(0);
