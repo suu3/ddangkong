@@ -1,0 +1,48 @@
+/* 셔플 애니메이션 */
+.enter {
+  opacity: 0;
+}
+
+.enter-active {
+  opacity: 1;
+  transition: opacity 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.enter-done {
+  /* transform: translate(50%); */
+}
+
+.exit {
+  opacity: 1;
+  /* transform: translate(50%); */
+}
+
+.exit-active {
+  opacity: 0;
+  /* transform: translate(0); */
+  transition: opacity 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* 
+.enter {
+  transform: translate(0);
+}
+
+.enter-active {
+  transform: translate(50%);
+  transition: transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.enter-done {
+  transform: translate(50%);
+}
+
+.exit {
+  transform: translate(50%);
+}
+
+.exit-active {
+  transform: translate(0);
+  transition: transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+*/
