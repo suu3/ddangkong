@@ -1,10 +1,11 @@
 interface useDeckProps {
   cnt: number;
   getCard: (i: number) => React.ReactNode;
+  Group: ({ children }: { children: React.ReactNode }) => JSX.Element;
 }
 
-const useDeck = ({ cnt, getCard }: useDeckProps) => {
-  const divs = [];
+const useDeck = ({ cnt, getCard, Group }: useDeckProps) => {
+  const groups = [];
   let currentDivs = [];
 
   // const isNumberDivisibleBy = (n: number, divisor: number) => {
@@ -17,15 +18,11 @@ const useDeck = ({ cnt, getCard }: useDeckProps) => {
     currentDivs.push(getCard(i));
 
     if (i % divisor === 0 || i === cnt) {
-      divs.push(
-        <div key={divs.length} className="w-full flex items-center justify-evenly">
-          {currentDivs}
-        </div>
-      );
+      groups.push(<Group>{currentDivs}</Group>);
       currentDivs = [];
     }
   }
-  return divs;
+  return groups;
 };
 
 export default useDeck;
