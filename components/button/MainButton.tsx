@@ -1,3 +1,4 @@
+import { MouseEventHandler } from 'react';
 import clsx from 'clsx';
 import styles from './main-button.module.css';
 
@@ -6,11 +7,16 @@ interface MainButtonProps {
   variant?: 'outlined' | 'contained';
   color?: 'chocolate';
   className?: string;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
 }
 
-const MainButton = ({ label, variant = 'contained', color = 'chocolate', className }: MainButtonProps) => {
+const MainButton = ({ onClick, label, variant = 'contained', color = 'chocolate', className }: MainButtonProps) => {
   const btnCls = clsx(styles['button'], styles[variant], styles[color], className);
-  return <button className={btnCls}>{label}</button>;
+  return (
+    <button onClick={onClick} className={btnCls}>
+      {label}
+    </button>
+  );
 };
 
 export default MainButton;

@@ -6,7 +6,11 @@ import useUpDownCnt from '@/lib/hooks/useUpDownCnt';
 import baristarImage from '@/public/coffee/baristar.svg';
 import Image from 'next/image';
 
-export default function Order() {
+interface OrderProps {
+  handleStep: (type: 'next' | 'prev') => void;
+}
+
+export default function Order({ handleStep }: OrderProps) {
   const [totalCnt, handleTotalIncrease, handleTotalDecrease] = useUpDownCnt(0);
   const [blankCnt, handleBlankIncrease, handleBlankDecrease] = useUpDownCnt(0);
 
@@ -39,7 +43,7 @@ export default function Order() {
           <UpDownButton handleIncrease={handleBlankIncrease} handleDecrease={handleBlankDecrease} count={blankCnt} />
         </div>
       </div>
-      <MainButton label="주문하기" variant="contained" color="chocolate" />
+      <MainButton label="주문하기" variant="contained" color="chocolate" onClick={() => handleStep('next')} />
     </>
   );
 }

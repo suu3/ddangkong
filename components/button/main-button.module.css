@@ -14,6 +14,11 @@
   line-height: 100%; /* 1rem */
   letter-spacing: -0.02rem;
 
+  /* transition: all 0.15s ease-in-out; */
+
+  &:hover {
+    opacity: 0.8;
+  }
   /* color */
   &.chocolate {
     --button-primary: var(--chocolate, #6d4c41);

@@ -4,7 +4,11 @@ import Lottery from '@/components/Lottery';
 import UniqueText from '@/components/UniqueText';
 import { getDoubleDigitFormat } from '@/lib/utils/format';
 
-export default function Shuffle() {
+interface ShuffleProps {
+  handleStep: (type: 'next' | 'prev') => void;
+}
+
+export default function Shuffle({ handleStep }: ShuffleProps) {
   const cnt = 9;
   return (
     <>
@@ -21,7 +25,7 @@ export default function Shuffle() {
       </div>
       <div className="flex gap-2">
         <MainButton label="순서 섞기" variant="outlined" color="chocolate" />
-        <MainButton label="결과 확인" variant="contained" color="chocolate" />
+        <MainButton label="결과 확인" variant="contained" color="chocolate" onClick={() => handleStep('next')} />
       </div>
     </>
   );

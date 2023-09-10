@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 const Loading = () => {
   return (
-    <div className="bg-white fixed flex flex-col items-center justify-center top-0 left-0 right-0 bottom-0 z-[calc(var(--z-index))]">
+    <div className="bg-white fixed flex flex-col items-center justify-center top-0 left-0 right-0 bottom-0">
       <div className="flex">
         <UniqueText font="sans" Tag="div" size="ml" className="mb-7">
           커피 만드는 중
