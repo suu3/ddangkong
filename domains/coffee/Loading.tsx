@@ -48,7 +48,7 @@ const FirstLoading = ({ handleStep }: { handleStep: HandleStep }) => {
         </UniqueText>
       </div>
       <div className="relative h-44	w-24">
-        <Image className="animate-pulse" src={loadingImage} fill alt="로딩 이미지" />
+        <Image priority className="animate-pulse" src={loadingImage} fill alt="로딩 이미지" />
       </div>
     </article>
   );
@@ -68,9 +68,9 @@ const SecondLoading = ({ cnt, result = [] }: { cnt: number; result: Array<number
     getCard: (i: number) => {
       const isBoom = result.includes(i);
       const resultImg = isBoom ? (
-        <Image src={boomImage} alt="boom" width={160} height={190} className="w-[4.5rem] h-22" />
+        <Image priority src={boomImage} alt="boom" width={160} height={190} className="w-[4.5rem] h-22" />
       ) : (
-        <Image src={passImage} alt="pass" width={104} height={190} className="w-12 h-22" />
+        <Image priority src={passImage} alt="pass" width={104} height={190} className="w-12 h-22" />
       );
       return (
         <Lottery

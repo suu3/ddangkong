@@ -34,6 +34,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
     getCard: (i: number) => {
       return (
         <Lottery
+          key={i}
           style={
             {
               zIndex: getRandomInteger(0, 100),
@@ -43,7 +44,6 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
             } as React.CSSProperties
           }
           className={clsx(animation['base'], !shuffle ? animation['spread'] : animation['stack'])}
-          key={i}
         >
           {getDoubleDigitFormat(i)}
         </Lottery>

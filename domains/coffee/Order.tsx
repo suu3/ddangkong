@@ -26,6 +26,7 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
         </UniqueText>
       </BubbleContainer>
       <Image
+        priority
         src={baristarImage}
         alt="수염이 매력적인 따뜻한 아메리카노 바리스타"
         width={270}

@@ -16,6 +16,7 @@ export default function Start({ handleStep }: StartProps) {
         <strong className="text-4xl font-normal">복불복</strong>
       </UniqueText>
       <Image
+        priority
         className="pt-8"
         src={mainImage}
         alt="다섯 명이 종이를 내밀고 있고 두 명이 해골이 그려진 종이를 들고 있음"
