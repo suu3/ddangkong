@@ -1,18 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./domains/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    './domains/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     colors: {
-      chocolate: "var(--chocolate)",
+      chocolate: 'var(--chocolate)',
+      milkChocolate: 'var(--milk-chocolate)',
     },
     fontFamily: {
-      pretendard: "Pretendard-Regular",
-      uhbee: "UhBeeTokki",
-      sans: "PartialSansKR-Regular",
+      pretendard: 'Pretendard-Regular',
+      uhbee: 'UhBeeTokki',
+      sans: 'PartialSansKR-Regular',
     },
     extend: {
       // backgroundImage: {

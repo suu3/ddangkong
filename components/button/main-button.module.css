@@ -16,7 +16,13 @@
 
   /* transition: all 0.15s ease-in-out; */
 
-  &:hover {
+  &:hover:not(&:disabled) {
+    opacity: 0.8;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    filter: grayscale(1);
     opacity: 0.8;
   }
   /* color */
