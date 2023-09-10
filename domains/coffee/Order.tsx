@@ -58,7 +58,7 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
         </div>
       </div>
       <MainButton
-        disabled={total === 0}
+        disabled={total === 0 || boom === 0}
         label="주문하기"
         variant="contained"
         color="chocolate"

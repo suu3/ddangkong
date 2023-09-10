@@ -1,15 +1,17 @@
 'use client';
 
-import { useReducer, useState } from 'react';
+import React, { useReducer, useState } from 'react';
 import Image from 'next/image';
 import Loading from '@/domains/coffee/Loading';
 import Order from '@/domains/coffee/Order';
 import Shuffle from '@/domains/coffee/Shuffle';
 import Start from '@/domains/coffee/Start';
+
 import useStep from '@/lib/hooks/useStep';
+import { coffeeReducer, CoffeeActionType } from '@/lib/reducer/coffeeReducer';
+import { CoffeContext, initialCoffeeState } from '@/lib/context/coffee';
 
 import prevBtnIcon from '@/public/button/button_prev.svg';
-import { coffeeReducer, initialCoffeeState, CoffeeState, CoffeeActionType } from '@/lib/reducer/coffeeReducer';
 
 export default function Coffee() {
   const [step, Container, handleStep] = useStep(0);
@@ -33,12 +35,14 @@ export default function Coffee() {
   return (
     <div className="relative">
       {renderPrevBtn}
-      <Container curStep={step}>
-        <Start handleStep={handleStep} />
-        <Order state={orderState} handleOrder={handleOrder} handleStep={handleStep} />
-        <Shuffle cnt={orderState.total} handleStep={handleStep} />
-        <Loading />
-      </Container>
+      <CoffeContext.Provider value={{ orderState }}>
+        <Container curStep={step}>
+          <Start handleStep={handleStep} />
+          <Order state={orderState} handleOrder={handleOrder} handleStep={handleStep} />
+          <Shuffle cnt={orderState.total} handleStep={handleStep} />
+          <Loading />
+        </Container>
+      </CoffeContext.Provider>
     </div>
   );
 }

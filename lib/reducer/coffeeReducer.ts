@@ -1,18 +1,10 @@
-export interface CoffeeState {
-  boom: number;
-  total: number;
-}
+import { CoffeeState } from '../context/coffee';
 
 export type CoffeeActionType = 'increaseBoom' | 'decreaseBoom' | 'increaseTotal' | 'decreaseTotal';
 
 export interface CoffeeAction {
   type: CoffeeActionType;
 }
-
-export const initialCoffeeState: CoffeeState = {
-  boom: 0,
-  total: 0,
-};
 
 /**
  * @description boom은 항상 total 보다 작거나 같아야 한다.

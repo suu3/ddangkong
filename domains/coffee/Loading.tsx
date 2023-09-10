@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import BubbleContainer from '@/components/BubbleContainer';
 import Lottery from '@/components/Lottery';
 import UniqueText from '@/components/UniqueText';
@@ -12,6 +12,9 @@ import { useRouter } from 'next/navigation';
 
 import passImage from '@/public/coffee/coffee_pass.svg';
 import boomImage from '@/public/coffee/coffee_boom.svg';
+import { COFFEE_RESULT } from '@/lib/constants/serviceUrls';
+import { CoffeContext } from '@/lib/context/coffee';
+import { getLottery } from '@/lib/utils/random';
 
 const TRANSITION_TIME = 1500;
 
@@ -49,26 +52,33 @@ const FirstLoading = ({ handleStep }: { handleStep: HandleStep }) => {
   );
 };
 
-const SecondLoading = ({ cnt }: { cnt: number }) => {
+const SecondLoading = ({ cnt, result = [] }: { cnt: number; result: Array<number> }) => {
+  const [text, setText] = useState('커피를 쏠 사람은 바로~~');
+  const resultStr = result.join(',');
   const router = useRouter();
   const divs = useDeck({
     cnt,
     getCard: (i: number) => {
+      const resultImg = result.includes(i) ? (
+        <Image src={boomImage} alt="boom" width={160} height={190} className="w-[4.5rem] h-22" />
+      ) : (
+        <Image src={passImage} alt="pass" width={104} height={190} className="w-12 h-22" />
+      );
       return (
         <Lottery type="front" key={i} cnt={getDoubleDigitFormat(i)}>
-          <Image src={passImage} alt="pass" width={52} height={95} />
+          {resultImg}
         </Lottery>
       );
     },
   });
 
   useEffect(() => {
-    const timer1 = setTimeout(() =>
-      // 말풍선 변경
-      {}, TRANSITION_TIME);
+    const timer1 = setTimeout(() => {
+      setText(`${resultStr}번~~~!`);
+    }, TRANSITION_TIME);
 
     const timer2 = setTimeout(() => {
-      //   router.push('/coffee/result');
+      router.push(`${COFFEE_RESULT}?boom=${resultStr}`);
     }, TRANSITION_TIME * 2);
 
     return () => {
@@ -81,7 +91,7 @@ const SecondLoading = ({ cnt }: { cnt: number }) => {
     <article>
       <BubbleContainer width={234} height={62} className="mt-10 mx-auto ">
         <UniqueText Tag="span" size="md" font="uhbee" className="absolute">
-          커피를 쏠 사람은 바로~~
+          {text}
         </UniqueText>
       </BubbleContainer>
 
@@ -92,12 +102,16 @@ const SecondLoading = ({ cnt }: { cnt: number }) => {
 
 const Loading = () => {
   const [step, Container, handleStep] = useStep(0);
+  const {
+    orderState: { boom, total },
+  } = useContext(CoffeContext);
+  const randomResult = getLottery(total, boom);
 
   return (
     <div className="relative bg-white flex flex-col items-center justify-center top-0 left-0 right-0 bottom-0">
       <Container curStep={step}>
         <FirstLoading handleStep={handleStep} />
-        <SecondLoading cnt={12} />
+        <SecondLoading result={randomResult} cnt={total} />
       </Container>
     </div>
   );
