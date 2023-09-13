@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +13,7 @@ import linkIcon from '@/public/button/button_link.svg';
 import refreshIcon from '@/public/button/button_refresh.svg';
 import downloadIcon from '@/public/button/button_download.svg';
 import html2canvas from 'html2canvas';
-import { useRef } from 'react';
+import saveAs from "file-saver";
 
 export default function CoffeeResult() {
   const router = useRouter();
@@ -33,23 +34,21 @@ export default function CoffeeResult() {
       });
   };
 
-  const downloadImg = () =>{
-    if(screenRef.current == null) return;
-      html2canvas(screenRef.current).then(function(canvas) {
-          const img = canvas.toDataURL();
-          const fileNm = "심심풀이 땅콩 복불복 결과";
-          downloadURI(img, fileNm + ".png") 
-      });
-  }
+  const handleDownload = async () => {
+    if (!screenRef.current) return;
 
-  function downloadURI(uri: string, name: string){
-    const link = document.createElement("a")
-    link.download = name;
-    link.href = uri;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+    try {
+      const div = screenRef.current;
+      const canvas = await html2canvas(div, { scale: 2 });
+      canvas.toBlob((blob) => {
+        if (blob !== null) {
+          saveAs(blob, "result.png");
+        }
+      });
+    } catch (error) {
+      console.error("Error converting div to image:", error);
+    }
+  };
 
   return (
     <div className="p-[2.33rem]" ref={screenRef}>
@@ -68,7 +67,7 @@ export default function CoffeeResult() {
         <IconButton onClick={() => router.push('/coffee')}>
           <Image src={refreshIcon} className="w-4 h-4" width={48} height={48} alt="처음으로 돌아가기 버튼" />
         </IconButton>
-        <IconButton onClick={downloadImg}>
+        <IconButton onClick={handleDownload}>
           <Image src={downloadIcon} className="w-4 h-4" width={48} height={48} alt="이미지 저장하기 버튼" />
         </IconButton>
         <IconButton onClick={() => copyURL()}>
