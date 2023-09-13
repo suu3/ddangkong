@@ -42,7 +42,7 @@ export default function CoffeeResult() {
       const canvas = await html2canvas(div, { scale: 2 });
       canvas.toBlob((blob) => {
         if (blob !== null) {
-          saveAs(blob, "result.png");
+          saveAs(blob, "심심풀이 땅콩 복불복 결과.png");
         }
       });
     } catch (error) {
