@@ -68,9 +68,9 @@ const SecondLoading = ({ cnt, result = [] }: { cnt: number; result: Array<number
     getCard: (i: number) => {
       const isBoom = result.includes(i);
       const resultImg = isBoom ? (
-        <Image priority src={boomImage} alt="boom" width={160} height={190} className="w-[4.5rem] h-22" />
+        <Image priority src={boomImage} alt="boom" width={80} height={95} className="w-[4.5rem] h-22" />
       ) : (
-        <Image priority src={passImage} alt="pass" width={104} height={190} className="w-12 h-22" />
+        <Image priority src={passImage} alt="pass" width={52} height={95} className="w-12 h-22" />
       );
       return (
         <Lottery

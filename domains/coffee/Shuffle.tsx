@@ -37,6 +37,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
           key={i}
           style={
             {
+              //useMemo
               zIndex: getRandomInteger(0, 100),
               transitionDelay: `${i / cnt}s`,
               '--x': getRandomInteger(-130, 130),
