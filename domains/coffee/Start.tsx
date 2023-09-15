@@ -1,5 +1,6 @@
 import MainButton from '@/components/button/MainButton';
 import mainImage from '@/public/coffee/main.svg';
+import skullImage from '@/public/coffee/skull.svg';
 import Image from 'next/image';
 import UniqueText from '@/components/UniqueText';
 
