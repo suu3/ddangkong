@@ -33,7 +33,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
   };
 
 
-  const shuffleAnimation= (direction: string, boxRef: MutableRefObject<(HTMLDivElement | null)[]>, targetX: number, targetY: number, cnt:number) =>{
+  const shuffleAnimation= (boxRef: MutableRefObject<(HTMLDivElement | null)[]>, targetX: number, targetY: number, cnt:number) =>{
     boxRef?.current?.forEach((item: HTMLDivElement | null, index: number) => {
       if(!item) return;
       const {
@@ -46,39 +46,21 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
       const distanceX = childX + childWidth / 2;
       const distanceY = childY + childHeight / 2;
      
-      let transitionArray : {
-        transform: string;
-      }[] = [];
-
-      switch (direction){
-        case 'front':
-          transitionArray = [
-            { transform: "translate(0px)" },
-            {
-              transform: `translate(${targetX - distanceX}px,${
-                targetY - distanceY
-              }px)`
-            }
-          ]
-        case 'back' :
-          transitionArray = [
-            {
-              transform: `translate(${targetX - distanceX}px,${
-                targetY - distanceY
-              }px)`
-            },
-            { transform: "translate(0px)" }
-          ]
-      }
-      
       item.animate(
-        transitionArray,
         {
-          // timing options
-          duration: 2000,
-          delay: (index * 2000) / cnt,
-          fill: "forwards",
-          easing: "cubic-bezier(.32,2,.55,.27)"
+          transform: [
+            "translate(0px)",
+            `translate(${targetX - distanceX}px,${targetY - distanceY}px)`,
+            "translate(0px)"
+          ],
+          easing: ["cubic-bezier(.32,2,.55,.27)"],
+          // fill: "forwards",
+          offset: [0, 0.3, 0.7],
+        },
+        // timing options
+        {
+          delay: (index * 1500) / 9,
+          duration: 5000
         }
       );
     });
@@ -114,7 +96,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
       const targetY = y + height / 2;
 
      
-      shuffleAnimation('front', boxRef, targetX, targetY, cnt);
+      shuffleAnimation(boxRef, targetX, targetY, cnt);
 
       // setTimeout(() => {
       //   shuffleAnimation('back', boxRef, targetX, targetY, cnt);
