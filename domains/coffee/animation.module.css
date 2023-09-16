@@ -7,12 +7,14 @@
   transition: all 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.stack {
-  transform: translate(-50%, -50%);
+.skull {
+  opacity: 0;
 }
 
-.spread {
-  transform: translate(calc(var(--x) * 1%), calc(var(--y) * 1%));
+.fade-in {
+  animation-duration: 1.5s;
+  animation-name: fadeIn;
+  animation-fill-mode: both;
 }
 
 .slide {
@@ -24,6 +26,25 @@
 .slide-delay {
   animation-delay: 0.5s;
 }
+
+.bounce-in {
+  animation-duration: 1s;
+  animation-name: bounceIn;
+  animation-iteration-count: infinite;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 @keyframes slide {
   from,
   25%,
@@ -44,12 +65,6 @@
     transform: translate(0, 0);
   }
 }
-.bounce-in {
-  animation-duration: 1s;
-  animation-name: bounceIn;
-  animation-iteration-count: infinite;
-}
-
 
 @keyframes bounceIn {
   from,
@@ -85,26 +100,3 @@
     transform: scale3d(1, 1, 1);
   }
 }
-/* 
-.enter {
-  transform: translate(0);
-}
-
-.enter-active {
-  transform: translate(50%);
-  transition: transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.enter-done {
-  transform: translate(50%);
-}
-
-.exit {
-  transform: translate(50%);
-}
-
-.exit-active {
-  transform: translate(0);
-  transition: transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-*/

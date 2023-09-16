@@ -23,7 +23,7 @@ const UpDownButton = ({ count, handleIncrease = () => {}, handleDecrease = () =>
   };
 
   const onClickDownBtn = () => {
-    if (count <= 0) return alert('최소 인원은 0명입니다.');
+    if (count <= 0) return; //alert('최소 인원은 0명입니다.');
     handleDecrease();
   };
 

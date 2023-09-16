@@ -72,6 +72,7 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
         variant="contained"
         color="chocolate"
         onClick={() => handleStep('next')}
+        className="mb-10"
       />
     </>
   );

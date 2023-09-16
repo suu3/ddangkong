@@ -1,14 +1,70 @@
+import React, { useState } from 'react';
+import Image from 'next/image';
+import clsx from 'clsx';
 import MainButton from '@/components/button/MainButton';
+import UniqueText from '@/components/UniqueText';
 import mainImage from '@/public/coffee/main.svg';
 import skullImage from '@/public/coffee/skull.svg';
-import Image from 'next/image';
-import UniqueText from '@/components/UniqueText';
+import animation from './animation.module.css';
+import { useEffect } from 'react';
+import { getRandomInteger } from '@/lib/utils/random';
 
 interface StartProps {
   handleStep: (type: 'next' | 'prev') => void;
 }
 
 export default function Start({ handleStep }: StartProps) {
+  const [randomNum, setRandomNum] = useState(0);
+  const FADE_IN_DURATION = 1500;
+
+  const skullImgMetaList = [
+    {
+      location: 'top-[3.5rem] right-[7rem]',
+      rotate: 'rotate-[62deg]',
+    },
+    {
+      location: 'top-[12rem] right-[3rem]',
+      rotate: '-rotate-[150deg]',
+    },
+    {
+      location: 'top-[12.5rem] left-[4.2rem]',
+      rotate: '-rotate-[70deg]',
+    },
+    {
+      location: 'top-[6.5rem] right-[1.6rem]',
+      rotate: 'rotate-[155deg]',
+    },
+    {
+      location: 'top-[7.6rem] left-[2rem]',
+      rotate: '-rotate-2',
+    },
+  ];
+
+  const renderSkullImg = skullImgMetaList.map(({ location = '', rotate = '' }, index: number) => (
+    <Image
+      key={index}
+      src={skullImage}
+      className={clsx('absolute', location, rotate, animation['skull'], randomNum === index && animation[`fade-in`])}
+      width={127}
+      height={126}
+      alt="해골"
+    />
+  ));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRandomNum(prev => {
+        let selected = getRandomInteger(0, 4);
+        while (prev === selected) {
+          selected = getRandomInteger(0, 4);
+        }
+        return selected;
+      });
+    }, FADE_IN_DURATION);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <>
       <UniqueText Tag="h1" font="sans" size="lg" className="text-center pt-8">
@@ -16,16 +72,12 @@ export default function Start({ handleStep }: StartProps) {
         <br />
         <strong className="text-4xl font-normal">복불복</strong>
       </UniqueText>
-      <Image
-        priority
-        className="pt-8"
-        src={mainImage}
-        width={335}
-        height={321}
-        alt="다섯 명이 종이를 내밀고 있고 두 명이 해골이 그려진 종이를 들고 있음"
-      />
+      <div className="pt-8 relative w-[335px] h-[321px]">
+        {renderSkullImg}
+        <Image src={mainImage} priority width={335} height={321} alt="다섯 명이 빈 종이를 내밀고 있음" />
+      </div>
       <MainButton
-        className="mt-10"
+        className="my-10"
         label="시작하기"
         onClick={() => handleStep('next')}
         variant="contained"
