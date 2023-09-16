@@ -31,7 +31,7 @@ const Loading = () => {
 
   useTimeout(() => {
     router.push(`${COFFEE_RESULT}?boom=${randomResult}`);
-  }, TRANSITION_TIME * 3);
+  }, TRANSITION_TIME * 2.9);
 
   return (
     <div className="relative bg-white flex flex-col items-center justify-center top-0 left-0 right-0 bottom-0">
