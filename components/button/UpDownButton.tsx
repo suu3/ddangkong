@@ -29,7 +29,7 @@ const UpDownButton = ({ count, handleIncrease = () => {}, handleDecrease = () =>
 
   return (
     <div className={styles['wrapper']}>
-      <Image src={boxImage} alt="" fill />
+      <Image src={boxImage} alt="" sizes="100%" loading="eager" />
       <div className={styles['inner']}>
         <Image
           onClick={onClickDownBtn}
