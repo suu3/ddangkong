@@ -12,6 +12,8 @@ interface ShuffleProps {
   cnt: number;
 }
 
+type Location = [number, number][];
+
 const CardContainer = ({ children }: ContainerProps) => <div className="flex justify-evenly">{children}</div>;
 
 export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
@@ -19,6 +21,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<Array<HTMLDivElement | null>>([]);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [firstLocation, setFirstLocation] = useState(Array.from({ length: cnt }).map(() => [0, 0]));
 
   const onClickShuffle = () => {
     setIsShuffling(true);
@@ -39,6 +42,9 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
       const targetX = x + width / 2;
       const targetY = y + height / 2;
 
+      let moveDistances: Location = [];
+      let returnDistances: Location = [];
+
       box.forEach((item: HTMLDivElement | null, index: number) => {
         if (!item) return;
 
@@ -47,13 +53,29 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
         const distanceX = childX + childWidth / 2;
         const distanceY = childY + childHeight / 2;
 
+        moveDistances.push([targetX - distanceX, targetY - distanceY]);
+        returnDistances.push([-(targetX - distanceX), -(targetY - distanceY)]);
+      });
+
+      //random sort
+      returnDistances.sort((a, b) => {
+        return Math.random() - 0.5;
+      });
+
+      box.forEach((item: HTMLDivElement | null, index: number) => {
+        if (!item) return;
+
+        const [firstX, firstY] = firstLocation[index - 1];
+        const [moveX, moveY] = moveDistances[index - 1];
+        const [returnX, returnY] = returnDistances[index - 1];
+
         item.animate(
           {
             transform: [
-              'translate(0px)',
-              `translate(${targetX - distanceX}px, ${targetY - distanceY}px)`,
-              `translate(${targetX - distanceX}px, ${targetY - distanceY}px)`,
-              'translate(0px)',
+              `translate(${firstX}px, ${firstY}px)`,
+              `translate(${firstX + moveX}px, ${firstY + moveY}px)`,
+              `translate(${firstX + moveX}px, ${firstY + moveY}px)`,
+              `translate(${firstX + moveX + returnX}px, ${firstY + moveY + returnY}px)`,
             ],
             easing: ['cubic-bezier(0.68,-.55,.265,1.55)'],
             offset: [0, 0.3, 0.7, 1],
@@ -61,8 +83,25 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
           {
             delay: (index * 1500) / 9,
             duration: ANIMATION_DURATION,
+            fill: 'forwards',
           }
         );
+      });
+
+      /**
+       * Card의 위치를 random으로 바꿀 때, 이동한 위치에서 새로운 거리계산은 가능하지만 transform 속성은 바뀌지 않는다.
+       * 따라서 처음의 위치를 useState로 저장해놓고, transform 할때마다 마지막 위치를 누적 시켜야 한다.
+       */
+
+      setFirstLocation(prev => {
+        const temp = prev.map((_, index) => {
+          const [firstX, firstY] = prev[index];
+          const [moveX, moveY] = moveDistances[index];
+          const [returnX, returnY] = returnDistances[index];
+          return [firstX + moveX + returnX, firstY + moveY + returnY];
+        });
+
+        return temp;
       });
     }
   };

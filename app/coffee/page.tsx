@@ -13,6 +13,13 @@ import { CoffeContext, initialCoffeeState } from '@/lib/context/coffee';
 
 import prevBtnIcon from '@/public/button/button_prev.svg';
 
+export const metadata = {
+  metadataBase: new URL(`${process.env.NEXT_PUBLIC_SITE_URL}`),
+  openGraph: {
+    images: '/og-image.png',
+  },
+};
+
 export default function Coffee() {
   const [step, Container, handleStep] = useStep(0);
   const [orderState, orderDispatch] = useReducer(coffeeReducer, initialCoffeeState);
