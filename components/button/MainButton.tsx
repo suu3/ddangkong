@@ -7,8 +7,8 @@ interface MainButtonProps {
   variant?: 'outlined' | 'contained';
   color?: 'chocolate';
   disabled?: boolean;
-  className?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
+  className?: string;
 }
 
 const MainButton = ({

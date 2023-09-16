@@ -23,13 +23,13 @@ const UpDownButton = ({ count, handleIncrease = () => {}, handleDecrease = () =>
   };
 
   const onClickDownBtn = () => {
-    if (count <= 0) return alert('최소 인원은 0명입니다.');
+    if (count <= 0) return; //alert('최소 인원은 0명입니다.');
     handleDecrease();
   };
 
   return (
     <div className={styles['wrapper']}>
-      <Image src={boxImage} alt="" fill />
+      <Image src={boxImage} alt="" sizes="100%" loading="eager" />
       <div className={styles['inner']}>
         <Image
           onClick={onClickDownBtn}
