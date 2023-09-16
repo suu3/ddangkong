@@ -29,15 +29,27 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
           커피를 마실 사람은 몇 명인가요?
         </UniqueText>
       </BubbleContainer>
-      <div className="relative mb-8">
-        <Image src={steam1} alt="연기" width={270} height={330} className={clsx('absolute')} />
-        <Image src={steam2} alt="연기" width={270} height={330} className={clsx('absolute')} />
+      <div className="relative mb-8 w-[270px] h-[330px]">
         <Image
-          priority
-          src={baristarImage}
-          alt="수염이 매력적인 따뜻한 아메리카노 바리스타"
+          src={steam1}
+          alt="연기"
           width={270}
           height={330}
+          className={clsx('absolute', animation['slide'], animation['slide-1'])}
+        />
+        <Image
+          src={steam2}
+          alt="연기"
+          width={270}
+          height={330}
+          className={clsx('absolute', animation['slide'], animation['slide-2'])}
+        />
+        <Image
+          priority
+          loading="eager"
+          src={baristarImage}
+          alt="수염이 매력적인 따뜻한 아메리카노 바리스타"
+          sizes="100%"
           className="mb-8"
         />
       </div>
