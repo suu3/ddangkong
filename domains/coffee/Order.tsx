@@ -1,13 +1,18 @@
+import { Fragment, useContext } from 'react';
+import Image from 'next/image';
+import clsx from 'clsx';
+
 import BubbleContainer from '@/components/BubbleContainer';
 import MainButton from '@/components/button/MainButton';
 import UpDownButton from '@/components/button/UpDownButton';
 import UniqueText from '@/components/UniqueText';
-import { CoffeeActionType } from '@/lib/reducer/coffeeReducer';
+import AudioPlayer from '@/components/AudioPlayer';
+import { CoffeeContext } from '@/lib/context/coffee';
+import usePlayAudio from '@/lib/hooks/usePlayAudio';
+
 import baristarImage from '@/public/coffee/baristar.svg';
 import steam1 from '@/public/coffee/steam-1.svg';
 import steam2 from '@/public/coffee/steam-2.svg';
-import clsx from 'clsx';
-import Image from 'next/image';
 import animation from './animation.module.css';
 
 interface OrderProps {
@@ -16,14 +21,21 @@ interface OrderProps {
     boom: number;
     total: number;
   };
-  handleOrder: (type: CoffeeActionType) => void;
 }
 
-export default function Order({ handleStep, state, handleOrder }: OrderProps) {
-  const { boom, total } = state;
+export default function Order({ handleStep, state }: OrderProps) {
+  const { allMuteState, orderState, handleOrder } = useContext(CoffeeContext);
+  const { boom, total } = orderState;
+  const { playerRef, playSound, pauseSound } = usePlayAudio();
+
+  const componseSoundAndClick = (callback: () => void) => {
+    playSound(playerRef?.current?.audio?.current);
+    callback();
+  };
 
   return (
-    <>
+    <Fragment>
+      <AudioPlayer muted={allMuteState.isAllMuted} src="/sound/click.mp3" ref={playerRef} />
       <BubbleContainer width={234} height={62} className="mt-10 mx-auto ">
         <UniqueText Tag="span" size="md" font="uhbee" className="absolute">
           커피를 마실 사람은 몇 명인가요?
@@ -59,8 +71,8 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
             총 인원 :
           </UniqueText>
           <UpDownButton
-            handleIncrease={() => handleOrder('increaseTotal')}
-            handleDecrease={() => handleOrder('decreaseTotal')}
+            handleIncrease={() => componseSoundAndClick(() => handleOrder('INCREASE_TOTAL'))}
+            handleDecrease={() => componseSoundAndClick(() => handleOrder('DECREASE_TOTAL'))}
             count={total}
           />
         </div>
@@ -70,10 +82,8 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
             꽝 :
           </UniqueText>
           <UpDownButton
-            handleIncrease={() => {
-              handleOrder('increaseBoom');
-            }}
-            handleDecrease={() => handleOrder('decreaseBoom')}
+            handleIncrease={() => componseSoundAndClick(() => handleOrder('INCREASE_BOOM'))}
+            handleDecrease={() => componseSoundAndClick(() => handleOrder('DECREASE_BOOM'))}
             count={boom}
           />
         </div>
@@ -86,6 +96,6 @@ export default function Order({ handleStep, state, handleOrder }: OrderProps) {
         onClick={() => handleStep('next')}
         className="mb-10"
       />
-    </>
+    </Fragment>
   );
 }

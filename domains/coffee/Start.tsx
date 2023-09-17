@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Image from 'next/image';
 import clsx from 'clsx';
+import AudioPlayer from '@/components/AudioPlayer';
 import MainButton from '@/components/button/MainButton';
 import Tooltip from '@/components/Tooltip';
 import UniqueText from '@/components/UniqueText';
+import { CoffeeContext } from '@/lib/context/coffee';
+import usePlayAudio from '@/lib/hooks/usePlayAudio';
+import { getRandomInteger } from '@/lib/utils/random';
+
 import mainImage from '@/public/coffee/main.svg';
 import skullImage from '@/public/coffee/skull.svg';
 import animation from './animation.module.css';
-import { useEffect } from 'react';
-import { getRandomInteger } from '@/lib/utils/random';
 
 interface StartProps {
   handleStep: (type: 'next' | 'prev') => void;
@@ -16,6 +19,11 @@ interface StartProps {
 
 export default function Start({ handleStep }: StartProps) {
   const [randomNum, setRandomNum] = useState(0);
+  const {
+    allMuteState: { isAllMuted },
+  } = useContext(CoffeeContext);
+  const { playerRef, playSound, pauseSound } = usePlayAudio();
+
   const FADE_IN_DURATION = 1500;
 
   const skullImgMetaList = [
@@ -66,8 +74,13 @@ export default function Start({ handleStep }: StartProps) {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    playSound(playerRef?.current?.audio?.current);
+  }, [isAllMuted, playSound, playerRef]);
+
   return (
     <>
+      <AudioPlayer ref={playerRef} src="/sound/bgm.mp3" muted={isAllMuted} />
       <UniqueText Tag="h1" font="sans" size="lg" className="text-center pt-8">
         커피내기
         <br />

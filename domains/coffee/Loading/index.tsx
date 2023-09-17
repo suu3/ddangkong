@@ -1,10 +1,10 @@
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
 import useStep from '@/lib/hooks/useStep';
 import { useRouter } from 'next/navigation';
 
 import { COFFEE_RESULT } from '@/lib/constants/serviceUrls';
-import { CoffeContext } from '@/lib/context/coffee';
+import { CoffeeContext } from '@/lib/context/coffee';
 import { getLottery } from '@/lib/utils/random';
 import FirstLoading from './FirstLoading';
 import SecondLoading from './SecondLoading';
@@ -15,10 +15,11 @@ const Loading = () => {
 
   const [step, Container, handleStep] = useStep(0);
   const [changed, setChanged] = useState(false);
+
   const router = useRouter();
   const {
     orderState: { boom, total },
-  } = useContext(CoffeContext);
+  } = useContext(CoffeeContext);
   const randomResult = getLottery(total, boom).join(',');
 
   useTimeout(() => {

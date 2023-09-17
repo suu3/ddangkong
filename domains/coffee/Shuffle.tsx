@@ -1,4 +1,4 @@
-import { ReactNode, RefObject, useState, useRef } from 'react';
+import { ReactNode, RefObject, useState, useRef, useContext } from 'react';
 import clsx from 'clsx';
 import BubbleContainer from '@/components/BubbleContainer';
 import MainButton from '@/components/button/MainButton';
@@ -6,6 +6,9 @@ import UniqueText from '@/components/UniqueText';
 import Lottery from '@/components/Lottery';
 import useDeck, { ContainerProps } from '@/lib/hooks/useDeck';
 import { getDoubleDigitFormat } from '@/lib/utils/format';
+import AudioPlayer from '@/components/AudioPlayer';
+import usePlayAudio from '@/lib/hooks/usePlayAudio';
+import { CoffeeContext } from '@/lib/context/coffee';
 
 interface ShuffleProps {
   handleStep: (type: 'next' | 'prev') => void;
@@ -18,18 +21,30 @@ const CardContainer = ({ children }: ContainerProps) => <div className="flex jus
 
 export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
   const ANIMATION_DURATION = 2500 + cnt * 100;
+  const ANIMATION_TOTAL = 1500;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<Array<HTMLDivElement | null>>([]);
   const [isShuffling, setIsShuffling] = useState(false);
   const [firstLocation, setFirstLocation] = useState(Array.from({ length: cnt }).map(() => [0, 0]));
 
+  const {
+    allMuteState: { isAllMuted },
+  } = useContext(CoffeeContext);
+  const { playerRef, playSound } = usePlayAudio();
+
   const onClickShuffle = () => {
+    playSound(playerRef?.current?.audio?.current);
     setIsShuffling(true);
     setTimeout(() => {
       setIsShuffling(false);
-    }, ANIMATION_DURATION + 100);
+    }, ANIMATION_DURATION + ANIMATION_TOTAL);
 
     triggerShuffle(containerRef, boxRef);
+  };
+
+  const onClickNext = () => {
+    handleStep('next');
   };
 
   const triggerShuffle = (containerRef: RefObject<HTMLDivElement>, boxRef: RefObject<(HTMLDivElement | null)[]>) => {
@@ -81,7 +96,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
             offset: [0, 0.3, 0.7, 1],
           },
           {
-            delay: (index * 1500) / 9,
+            delay: (index * ANIMATION_TOTAL) / 9,
             duration: ANIMATION_DURATION,
             fill: 'forwards',
           }
@@ -120,6 +135,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
 
   return (
     <>
+      <AudioPlayer muted={isAllMuted} src="/sound/shuffling.mp3" ref={playerRef} />
       <BubbleContainer width={234} height={62} className="mt-10 mx-auto ">
         <UniqueText Tag="span" size="md" font="uhbee" className="absolute">
           각자의 번호를 골라주세요~
@@ -137,7 +153,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
           color="chocolate"
           onClick={onClickShuffle}
         />
-        <MainButton label="결과 확인" variant="contained" color="chocolate" onClick={() => handleStep('next')} />
+        <MainButton label="결과 확인" variant="contained" color="chocolate" onClick={onClickNext} />
       </div>
     </>
   );

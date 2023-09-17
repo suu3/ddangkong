@@ -1,8 +1,16 @@
 import React from 'react';
+import { CoffeeActionType, SoundActionType } from '../reducer/coffee';
 
 export interface CoffeeState {
   boom: number;
   total: number;
+}
+
+/**
+ * Sound State는 전체 음소거 상태를 제어한다.
+ */
+export interface allMuteState {
+  isAllMuted: boolean;
 }
 
 export const initialCoffeeState: CoffeeState = {
@@ -10,10 +18,18 @@ export const initialCoffeeState: CoffeeState = {
   total: 0,
 };
 
-export const CoffeContext = React.createContext<{
+export const initialallMuteState: allMuteState = {
+  isAllMuted: true,
+};
+
+export const CoffeeContext = React.createContext<{
   orderState: CoffeeState;
-  // orderDispatch: React.Dispatch<CoffeeAction>;
+  allMuteState: allMuteState;
+  handleOrder: (type: CoffeeActionType) => void;
+  handleAllMute: (type: SoundActionType) => void;
 }>({
   orderState: initialCoffeeState,
-  // orderDispatch: () => {},
+  allMuteState: initialallMuteState,
+  handleOrder: () => {},
+  handleAllMute: () => {},
 });
