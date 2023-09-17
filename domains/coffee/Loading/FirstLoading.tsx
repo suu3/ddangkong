@@ -1,10 +1,24 @@
 import Image from 'next/image';
 import loadingImage from '@/public/coffee/loading.gif';
 import UniqueText from '@/components/UniqueText';
+import AudioPlayer from '@/components/AudioPlayer';
+import usePlayAudio from '@/lib/hooks/usePlayAudio';
+import { CoffeeContext } from '@/lib/context/coffee';
+import { useContext, useEffect } from 'react';
 
 const FirstLoading = () => {
+  const {
+    allMuteState: { isAllMuted },
+  } = useContext(CoffeeContext);
+  const { playerRef, playSound } = usePlayAudio();
+
+  useEffect(() => {
+    playSound(playerRef?.current?.audio?.current);
+  }, [isAllMuted, playSound, playerRef]);
+
   return (
     <article className="flex flex-col min-h-[36rem] items-center justify-center">
+      <AudioPlayer muted={isAllMuted} src="/sound/water.mp3" ref={playerRef} />
       <div className="flex">
         <UniqueText font="sans" Tag="div" size="ml" className="mb-7">
           커피 만드는 중
