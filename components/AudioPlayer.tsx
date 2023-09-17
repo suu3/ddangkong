@@ -1,4 +1,4 @@
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import H5AudioPlayer from 'react-h5-audio-player';
 
 interface AudioPlayerProps {
@@ -7,18 +7,8 @@ interface AudioPlayerProps {
 }
 
 const AudioPlayer = forwardRef<H5AudioPlayer, AudioPlayerProps>(({ src = '/sound/bgm.mp3', muted = false }, ref) => {
-  return (
-    <H5AudioPlayer
-      key={muted}
-      src={src}
-      preload="auto"
-      className="hidden"
-      autoPlay={false}
-      volume={0.5}
-      ref={ref}
-      muted={muted}
-    />
-  );
+  if (muted) return null;
+  return <H5AudioPlayer src={src} preload="auto" className="hidden" autoPlay={false} volume={0.5} ref={ref} />;
 });
 
 AudioPlayer.displayName = 'AudioPlayer';

@@ -42,6 +42,7 @@ export default function CoffeeResult() {
           loading="eager"
           className="absolute w-full h-full"
           src={coffeeImage}
+          priority
           alt="실망한 커피"
           width={296}
           height={386}
