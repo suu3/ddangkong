@@ -18,7 +18,7 @@ const FirstLoading = () => {
 
   return (
     <article className="flex flex-col min-h-[36rem] items-center justify-center">
-      <AudioPlayer muted={isAllMuted} src="/sound/water.mp3" ref={playerRef} />
+      <AudioPlayer muted={isAllMuted} volume={0.9} src="/sound/water.mp3" ref={playerRef} />
       <div className="flex">
         <UniqueText font="sans" Tag="div" size="ml" className="mb-7">
           커피 만드는 중

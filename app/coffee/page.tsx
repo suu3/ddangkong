@@ -7,15 +7,13 @@ import Order from '@/domains/coffee/Order';
 import Shuffle from '@/domains/coffee/Shuffle';
 import Start from '@/domains/coffee/Start';
 
-import useStep from '@/lib/hooks/useStep';
-import { coffeeReducer, CoffeeActionType, soundReducer, SoundActionType } from '@/lib/reducer/coffee';
-import { CoffeeContext, initialCoffeeState, initialallMuteState } from '@/lib/context/coffee';
-
-import usePlayAudio from '@/lib/hooks/usePlayAudio';
-
-import prevBtnIcon from '@/public/button/button_prev.svg';
 import PlayerButton from '@/domains/coffee/PlayerButton';
 import AudioPlayer from '@/components/AudioPlayer';
+import useStep from '@/lib/hooks/useStep';
+import usePlayAudio from '@/lib/hooks/usePlayAudio';
+import { coffeeReducer, CoffeeActionType, soundReducer, SoundActionType } from '@/lib/reducer/coffee';
+import { CoffeeContext, initialCoffeeState, initialallMuteState } from '@/lib/context/coffee';
+import prevBtnIcon from '@/public/button/button_prev.svg';
 
 export default function Coffee() {
   const [step, Container, handleStep] = useStep(0);
@@ -25,6 +23,11 @@ export default function Coffee() {
 
   const handleOrder = (type: CoffeeActionType) => {
     orderDispatch({ type });
+  };
+
+  const onSoundToggle = () => {
+    const type = allMuteState.isAllMuted ? 'UNMUTE_SOUND' : 'MUTE_SOUND';
+    handleAllMute(type);
   };
 
   const handleAllMute = (type: SoundActionType) => {
@@ -65,8 +68,8 @@ export default function Coffee() {
           handleAllMute,
         }}
       >
-        <AudioPlayer volume="0.3" ref={playerRef} src="/sound/bgm.mp3" muted={allMuteState.isAllMuted} />
-        <PlayerButton />
+        <AudioPlayer volume={0.4} ref={playerRef} src="/sound/bgm.mp3" muted={allMuteState.isAllMuted} />
+        <PlayerButton onSoundToggle={onSoundToggle} muted={allMuteState.isAllMuted} />
         <Container curStep={step}>
           <Start handleStep={handleStep} />
           <Order state={orderState} handleStep={handleStep} />

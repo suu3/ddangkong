@@ -13,7 +13,7 @@
   text-align: center;
   padding: 0.5rem 0.75rem;
 
-  background-color: black;
+  background-color: #5e4942;
   color: white;
 
   &:after {
@@ -23,10 +23,10 @@
     width: 0px;
     height: 0px;
     border: 10px solid transparent;
-    border-top-color: #000;
+    border-top-color: #5e4942;
 
     position: absolute;
-    top: 100%;
+    top: calc(100% - 0.1rem);
     left: 50%;
     transform: translateX(-50%);
   }
