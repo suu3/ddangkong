@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useReducer } from 'react';
 import Loading from '@/domains/coffee/Loading';
 import Order from '@/domains/coffee/Order';
 import Shuffle from '@/domains/coffee/Shuffle';
@@ -14,14 +14,6 @@ import Image from 'next/image';
 
 import prevBtnIcon from '@/public/button/button_prev.svg';
 import PlayerButton from '@/domains/coffee/PlayerButton';
-import AudioPlayer from '@/components/AudioPlayer';
-
-export const metadata = {
-  metadataBase: new URL(`${process.env.NEXT_PUBLIC_SITE_URL}`),
-  openGraph: {
-    images: '/og-image.png',
-  },
-};
 
 export default function Coffee() {
   const [step, Container, handleStep] = useStep(0);
