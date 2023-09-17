@@ -86,13 +86,9 @@ export default function Start({ handleStep }: StartProps) {
             Click !
           </Tooltip>
         </div>
-        <MainButton
-          className="mt-20 mb-10"
-          label="시작하기"
-          onClick={() => handleStep('next')}
-          variant="contained"
-          color="chocolate"
-        />
+        <MainButton className="mt-20 mb-10" onClick={() => handleStep('next')} variant="contained" color="chocolate">
+          시작하기
+        </MainButton>
       </div>
     </>
   );

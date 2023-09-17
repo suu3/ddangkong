@@ -1,4 +1,4 @@
-@import "@/styles/fonts.css";
+@import '@/styles/fonts.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,7 +19,11 @@
   --nav-z-index: 1000;
 
   /* colors */
-  --chocolate: #3d3131;
+  --chocolate07: #3d3131;
+
+  --chocolate07: #3d3131;
+  --Chocolate06: #493b3b;
+  --Chocolate05: #5a4949;
   --milk-chocolate: #655049;
 }
 

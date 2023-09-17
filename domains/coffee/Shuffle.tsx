@@ -142,18 +142,19 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
         </UniqueText>
       </BubbleContainer>
 
-      <div ref={containerRef} className="flex flex-col justify-center align-center mb-16 mt-6 min-h-[20rem] relative">
+      <div
+        ref={containerRef}
+        className="flex flex-col justify-center align-center mb-[2.5rem] mt-6 min-h-[20rem] relative"
+      >
         {gridDivs}
       </div>
       <div className="flex gap-2 mb-10">
-        <MainButton
-          disabled={isShuffling}
-          label="순서 섞기"
-          variant="outlined"
-          color="chocolate"
-          onClick={onClickShuffle}
-        />
-        <MainButton label="결과 확인" variant="contained" color="chocolate" onClick={onClickNext} />
+        <MainButton disabled={isShuffling} variant="outlined" color="chocolate" onClick={onClickShuffle}>
+          순서 섞기
+        </MainButton>
+        <MainButton variant="contained" color="chocolate" onClick={onClickNext}>
+          결과 확인
+        </MainButton>
       </div>
     </>
   );
