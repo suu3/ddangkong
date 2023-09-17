@@ -6,7 +6,6 @@ import MainButton from '@/components/button/MainButton';
 import Tooltip from '@/components/Tooltip';
 import UniqueText from '@/components/UniqueText';
 import { CoffeeContext } from '@/lib/context/coffee';
-import usePlayAudio from '@/lib/hooks/usePlayAudio';
 import { getRandomInteger } from '@/lib/utils/random';
 
 import mainImage from '@/public/coffee/main.svg';
@@ -19,10 +18,6 @@ interface StartProps {
 
 export default function Start({ handleStep }: StartProps) {
   const [randomNum, setRandomNum] = useState(0);
-  const {
-    allMuteState: { isAllMuted },
-  } = useContext(CoffeeContext);
-  const { playerRef, playSound, pauseSound } = usePlayAudio();
 
   const FADE_IN_DURATION = 1500;
 
@@ -74,13 +69,8 @@ export default function Start({ handleStep }: StartProps) {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    playSound(playerRef?.current?.audio?.current);
-  }, [isAllMuted, playSound, playerRef]);
-
   return (
     <>
-      <AudioPlayer ref={playerRef} src="/sound/bgm.mp3" muted={isAllMuted} />
       <UniqueText Tag="h1" font="sans" size="lg" className="text-center pt-8">
         커피내기
         <br />
