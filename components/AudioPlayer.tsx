@@ -8,7 +8,7 @@ interface AudioPlayerProps {
 }
 
 const AudioPlayer = forwardRef<H5AudioPlayer, AudioPlayerProps>(
-  ({ src = '/sound/bgm.mp3', muted = false, volume = '0.5' }, ref) => {
+  ({ src = '/sound/bgm.mp3', muted = false, volume = '1' }, ref) => {
     if (muted) return null;
     return <H5AudioPlayer src={src} preload="auto" className="hidden" autoPlay={false} volume={volume} ref={ref} />;
   }

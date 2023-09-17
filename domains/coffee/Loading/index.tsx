@@ -13,6 +13,10 @@ import { useTimeout } from '@/lib/hooks/useTimeout';
 const Loading = () => {
   const TRANSITION_TIME = 1500;
 
+  const {
+    allMuteState: { isAllMuted },
+  } = useContext(CoffeeContext);
+
   const [step, Container, handleStep] = useStep(0);
   const [changed, setChanged] = useState(false);
 
@@ -31,7 +35,7 @@ const Loading = () => {
   }, TRANSITION_TIME * 2);
 
   useTimeout(() => {
-    router.push(`${COFFEE_RESULT}?boom=${randomResult}`);
+    router.push(`${COFFEE_RESULT}?boom=${randomResult}&muted=${isAllMuted}`);
   }, TRANSITION_TIME * 2.9);
 
   return (

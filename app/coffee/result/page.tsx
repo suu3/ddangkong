@@ -1,26 +1,35 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import UniqueText from '@/components/UniqueText';
+import IconButton from '@/components/button/IconButton';
+import AudioPlayer from '@/components/AudioPlayer';
+import PlayerButton from '@/domains/coffee/PlayerButton';
+
 import { downloadScreenshot } from '@/lib/utils/image';
 import { copyCurrentURL } from '@/lib/utils/clipboard';
+import usePlayAudio from '@/lib/hooks/usePlayAudio';
 
 import coffeeImage from '@/public/coffee/result.svg';
 import walletImage from '@/public/coffee/wallet.svg';
-import IconButton from '@/components/button/IconButton';
+
 import linkIcon from '@/public/button/button_link.svg';
 import refreshIcon from '@/public/button/button_refresh.svg';
 import downloadIcon from '@/public/button/button_download.svg';
 import { COFFEE_HOME } from '@/lib/constants/serviceUrls';
 
 export default function CoffeeResult() {
-  const screenRef = useRef(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const boom = searchParams.get('boom');
+  const muted = searchParams.get('muted') !== 'false';
+  const { playerRef, playSound, pauseSound } = usePlayAudio();
+  const [isMuted, setIsMuted] = useState(muted);
+
+  const screenRef = useRef(null);
 
   const handleDownload = () => {
     if (!screenRef.current) return;
@@ -28,8 +37,23 @@ export default function CoffeeResult() {
     downloadScreenshot(screenRef.current);
   };
 
+  const onSoundToggle = () => {
+    setIsMuted(prev => !prev);
+  };
+
+  useEffect(() => {
+    const audio = playerRef?.current?.audio?.current;
+    if (isMuted) {
+      pauseSound(audio);
+    } else {
+      playSound(audio);
+    }
+  }, [isMuted]);
+
   return (
     <div className="p-[2.33rem]" ref={screenRef}>
+      <PlayerButton onSoundToggle={onSoundToggle} muted={isMuted} />
+      <AudioPlayer volume={1} ref={playerRef} src="/sound/bgm-result.mp3" muted={isMuted} />
       <UniqueText Tag="p" size="lg" font="uhbee" className="text-center mb-2">
         오늘의 커피는
       </UniqueText>
