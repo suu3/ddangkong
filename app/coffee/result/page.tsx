@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import UniqueText from '@/components/UniqueText';
-import IconButton from '@/components/button/IconButton';
+import MainButton from '@/components/button/MainButton';
 import AudioPlayer from '@/components/AudioPlayer';
 import PlayerButton from '@/domains/coffee/PlayerButton';
 
@@ -74,15 +74,15 @@ export default function CoffeeResult() {
         <Image className="absolute bottom-0 animate-bounce" width={97} height={136} src={walletImage} alt="지갑 커피" />
       </div>
       <div className="flex m-auto justify-evenly">
-        <IconButton onClick={() => router.push(COFFEE_HOME)}>
+        <MainButton variant="icon" onClick={() => router.push(COFFEE_HOME)}>
           <Image src={refreshIcon} className="w-4 h-4" width={48} height={48} alt="처음으로 돌아가기 버튼" />
-        </IconButton>
-        <IconButton onClick={handleDownload}>
+        </MainButton>
+        <MainButton variant="icon" onClick={handleDownload}>
           <Image src={downloadIcon} className="w-4 h-4" width={48} height={48} alt="이미지 저장하기 버튼" />
-        </IconButton>
-        <IconButton onClick={copyCurrentURL}>
+        </MainButton>
+        <MainButton variant="icon" onClick={copyCurrentURL}>
           <Image src={linkIcon} className="w-4 h-4" width={48} height={48} alt="링크 복사 버튼" />
-        </IconButton>
+        </MainButton>
       </div>
     </div>
   );

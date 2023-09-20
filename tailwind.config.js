@@ -7,7 +7,7 @@ module.exports = {
   ],
   theme: {
     colors: {
-      chocolate: 'var(--chocolate)',
+      chocolate: 'var(--chocolate07)',
       milkChocolate: 'var(--milk-chocolate)',
     },
     fontFamily: {

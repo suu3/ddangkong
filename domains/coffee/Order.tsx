@@ -65,7 +65,7 @@ export default function Order({ handleStep, state }: OrderProps) {
           className="mb-8"
         />
       </div>
-      <div className="mb-16">
+      <div className="mb-[2.5rem]">
         <div className="flex items-center justify-center">
           <UniqueText Tag="span" size="md" font="sans" className="mr-4 w-[4.35rem]">
             총 인원 :
@@ -90,12 +90,13 @@ export default function Order({ handleStep, state }: OrderProps) {
       </div>
       <MainButton
         disabled={total === 0 || boom === 0}
-        label="주문하기"
         variant="contained"
         color="chocolate"
         onClick={() => handleStep('next')}
         className="mb-10"
-      />
+      >
+        주문하기
+      </MainButton>
     </Fragment>
   );
 }
