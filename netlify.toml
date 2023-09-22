@@ -4,3 +4,15 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "https://ddangkong.netlify.app/*"
+  to = "https://ddangkong.xyz/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.ddangkong.xyz/*"
+  to = "https://ddangkong.xyz/:splat"
+  status = 301
+  force = true
