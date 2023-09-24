@@ -96,7 +96,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
             offset: [0, 0.3, 0.7, 1],
           },
           {
-            delay: (index * ANIMATION_TOTAL) / 9,
+            delay: (index * ANIMATION_TOTAL) / 2 / cnt,
             duration: ANIMATION_DURATION,
             fill: 'forwards',
           }
@@ -126,8 +126,8 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
     Group: CardContainer,
     getCard: (i: number) => {
       return (
-        <Lottery key={i} ref={el => (boxRef.current[i] = el)} className={clsx()}>
-          {getDoubleDigitFormat(i)}
+        <Lottery key={i} ref={el => (boxRef.current[i] = el)}>
+          <Lottery.Back>{getDoubleDigitFormat(i)}</Lottery.Back>
         </Lottery>
       );
     },

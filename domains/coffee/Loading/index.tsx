@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 
 import useStep from '@/lib/hooks/useStep';
 import { useRouter } from 'next/navigation';
@@ -9,10 +9,9 @@ import { getLottery } from '@/lib/utils/random';
 import FirstLoading from './FirstLoading';
 import SecondLoading from './SecondLoading';
 import { useTimeout } from '@/lib/hooks/useTimeout';
+import { LOTTERY_SCALE_ANIMATION_TIME, RESULT_TRANSITION_TIME } from '@/lib/constants/coffee';
 
 const Loading = () => {
-  const TRANSITION_TIME = 1500;
-
   const {
     allMuteState: { isAllMuted },
   } = useContext(CoffeeContext);
@@ -24,19 +23,22 @@ const Loading = () => {
   const {
     orderState: { boom, total },
   } = useContext(CoffeeContext);
-  const randomResult = getLottery(total, boom).join(',');
+  const randomResult = useMemo(() => getLottery(total, boom).join(','), [total, boom]);
 
   useTimeout(() => {
     handleStep('next');
-  }, TRANSITION_TIME);
+  }, RESULT_TRANSITION_TIME);
 
   useTimeout(() => {
     setChanged(true);
-  }, TRANSITION_TIME * 2);
+  }, RESULT_TRANSITION_TIME * 2);
 
-  useTimeout(() => {
-    router.push(`${COFFEE_RESULT}?boom=${randomResult}&muted=${isAllMuted}`);
-  }, TRANSITION_TIME * 2.9);
+  useTimeout(
+    () => {
+      router.push(`${COFFEE_RESULT}?boom=${randomResult}&muted=${isAllMuted}`);
+    },
+    RESULT_TRANSITION_TIME * 2 + LOTTERY_SCALE_ANIMATION_TIME + 400 * boom + 1000 // 앞선 애니메이션 시간 +  scale&fadeout 시간 + 1000: 딜레이
+  );
 
   return (
     <div className="relative bg-white flex flex-col items-center justify-center top-0 left-0 right-0 bottom-0">
