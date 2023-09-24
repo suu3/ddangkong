@@ -61,7 +61,7 @@ const SecondLoading = ({ cnt, result = '', changed = false }: SecondLoadingProps
           }
         );
 
-        // 총 LOTTERY_SCALE_ANIMATION_TIME 만큼
+        if (index === 0) return;
         setTimeout(
           () => {
             if (!item) return;
