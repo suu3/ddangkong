@@ -18,7 +18,7 @@ export function getLottery(total: number, boom: number): number[] {
     result.push(selectedNumber);
   }
 
-  return result;
+  return result.sort((a: number, b: number) => a - b);
 }
 
 //min과 max 사이의 정수를 생성

@@ -5,14 +5,6 @@
 
   transition: all 0.15s ease-in-out;
 
-  &:hover:not(&:disabled) {
-    background: var(--Chocolate06, #493b3b);
-  }
-
-  &:active:not(&:disabled) {
-    background: var(--Chocolate05, #5a4949);
-  }
-
   &:disabled {
     cursor: not-allowed;
     opacity: 0.8;
@@ -41,12 +33,28 @@
   &.contained {
     background-color: var(--button-primary);
     color: var(--button-secondary);
+
+    &:hover:not(&:disabled) {
+      background: var(--Chocolate06, #493b3b);
+    }
+
+    &:active:not(&:disabled) {
+      background: var(--Chocolate05, #5a4949);
+    }
   }
 
   &.outlined {
     background-color: var(--button-secondary);
     color: var(--button-primary);
     border: 1px solid var(--button-primary);
+
+    &:hover:not(&:disabled) {
+      color: var(--Chocolate06, #493b3b);
+    }
+
+    &:active:not(&:disabled) {
+      color: var(--Chocolate05, #5a4949);
+    }
   }
 
   &.icon {
@@ -54,5 +62,13 @@
     width: 3rem;
     height: 3rem;
     border-radius: 50%;
+
+    &:hover:not(&:disabled) {
+      background: var(--Chocolate06, #493b3b);
+    }
+
+    &:active:not(&:disabled) {
+      background: var(--Chocolate05, #5a4949);
+    }
   }
 }
