@@ -37,7 +37,7 @@ const Loading = () => {
     () => {
       router.push(`${COFFEE_RESULT}?boom=${randomResult}&muted=${isAllMuted}`);
     },
-    RESULT_TRANSITION_TIME * 2 + LOTTERY_SCALE_ANIMATION_TIME + 400 * boom + 1000 // 앞선 애니메이션 시간 +  scale&fadeout 시간 + 1000: 딜레이
+    RESULT_TRANSITION_TIME * 2 + LOTTERY_SCALE_ANIMATION_TIME + 400 * boom + 500 // 앞선 애니메이션 시간 +  scale&fadeout 시간 + 1000: 딜레이
   );
 
   return (
