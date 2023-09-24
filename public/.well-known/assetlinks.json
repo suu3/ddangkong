@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.netlify.ddangkong.twa",
+      "package_name": "app.xyz.ddangkong.twa",
       "sha256_cert_fingerprints": [
         "4F:EC:EA:DD:77:EB:C0:76:99:97:BC:4C:9F:70:50:0C:52:C6:30:01:7D:39:46:0D:A7:A3:72:E9:FF:61:B4:65"
       ]
