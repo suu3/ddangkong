@@ -39,7 +39,7 @@ const UpDownButton = ({ count, handleIncrease = () => {}, handleDecrease = () =>
           height={32}
           className={clsx(styles['btn'], styles['minus'])}
         />
-        <UniqueText font="uhbee" Tag="span" className={styles['cnt']}>
+        <UniqueText size="md" font="uhbee-seulvely" Tag="span" className={styles['cnt']}>
           {getDoubleDigitFormat(count)}
         </UniqueText>
         <Image

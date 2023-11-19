@@ -7,7 +7,7 @@
   height: var(--global-navigation-height);
 
   background-color: #fff;
-  border-bottom: 1px solid var(--chocolate07, #3d3131);
+  border-bottom: 1px solid theme(colors.chocolate07);
 }
 
 .nav {

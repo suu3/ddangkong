@@ -11,8 +11,8 @@
   }
   /* color */
   &.chocolate {
-    --button-primary: var(--chocolate07, #3d3131);
-    --button-secondary: var(--white, #fff);
+    --button-primary: theme(colors.chocolate07);
+    --button-secondary: theme(colors.white);
   }
 
   /* variant */
@@ -23,7 +23,7 @@
     padding: 0.75rem 0.5rem;
     border-radius: 0.5rem;
 
-    font-family: Pretendard;
+    font-family: theme(fontFamily.pretendard);
     font-size: 1rem;
     font-weight: 700;
     line-height: 100%; /* 1rem */
@@ -35,11 +35,11 @@
     color: var(--button-secondary);
 
     &:hover:not(&:disabled) {
-      background: var(--Chocolate06, #493b3b);
+      background: theme(colors.chocolate06);
     }
 
     &:active:not(&:disabled) {
-      background: var(--Chocolate05, #5a4949);
+      background: theme(colors.chocolate05);
     }
   }
 
@@ -49,11 +49,11 @@
     border: 1px solid var(--button-primary);
 
     &:hover:not(&:disabled) {
-      color: var(--Chocolate06, #493b3b);
+      color: theme(colors.chocolate06);
     }
 
     &:active:not(&:disabled) {
-      color: var(--Chocolate05, #5a4949);
+      color: theme(colors.chocolate05);
     }
   }
 
@@ -64,11 +64,11 @@
     border-radius: 50%;
 
     &:hover:not(&:disabled) {
-      background: var(--Chocolate06, #493b3b);
+      background: theme(colors.chocolate06);
     }
 
     &:active:not(&:disabled) {
-      background: var(--Chocolate05, #5a4949);
+      background: theme(colors.chocolate05);
     }
   }
 }
