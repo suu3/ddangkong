@@ -5,7 +5,7 @@
 
 @layer base {
   html {
-    font-family: Pretendard-Regular, system-ui, sans-serif;
+    font-family: Pretendard, system-ui, sans-serif;
   }
 }
 
@@ -20,10 +20,8 @@
 
   /* colors */
   --chocolate07: #3d3131;
-
-  --chocolate07: #3d3131;
-  --Chocolate06: #493b3b;
-  --Chocolate05: #5a4949;
+  --chocolate06: #493b3b;
+  --chocolate05: #5a4949;
   --milk-chocolate: #655049;
 }
 

@@ -17,7 +17,7 @@
 }
 
 .cnt {
-  color: var(--milk-chocolate);
+  color: theme(colors.milkChocolate);
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: 0.05rem;

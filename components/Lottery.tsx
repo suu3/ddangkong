@@ -3,6 +3,7 @@ import Image from 'next/image';
 import clsx from 'clsx';
 import noteImage from '@/public/coffee/note.svg';
 import styles from './lottery.module.css';
+import UniqueText from './UniqueText';
 
 interface LotteryProps {
   children: ReactNode;
@@ -24,8 +25,12 @@ Lottery.displayName = 'Lottery';
 const LotteryBack = ({ children }: { children: ReactNode }) => {
   return (
     <>
-      <div className={styles['back-no']}>No.</div>
-      <div className={styles['back-selected']}>{children}</div>
+      <UniqueText Tag="div" size="md" font="uhbee-seulvely" className={styles['back-no']}>
+        No.
+      </UniqueText>
+      <UniqueText Tag="div" size="lg" font="uhbee-seulvely" className={styles['back-selected']}>
+        {children}
+      </UniqueText>
     </>
   );
 };
@@ -33,8 +38,12 @@ const LotteryBack = ({ children }: { children: ReactNode }) => {
 const LotteryFront = ({ cnt = '', children }: { cnt?: string; children: ReactNode }) => {
   return (
     <>
-      <div className={styles['front-no']}>No.{cnt}</div>
-      <div className={styles['front-selected']}>{children}</div>
+      <UniqueText Tag="div" size="md" font="uhbee-seulvely" className={styles['front-no']}>
+        No.{cnt}
+      </UniqueText>
+      <UniqueText Tag="div" size="lg" font="uhbee-seulvely" className={styles['front-selected']}>
+        {children}
+      </UniqueText>
     </>
   );
 };
