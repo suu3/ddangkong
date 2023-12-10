@@ -19,31 +19,6 @@ interface StartProps {
 export default function Start({ handleStep }: StartProps) {
   const [randomNum, setRandomNum] = useState(0);
 
-  const FADE_IN_DURATION = 1500;
-
-  const skullImgMetaList = [
-    {
-      location: 'top-[3.5rem] right-[7rem]',
-      rotate: 'rotate-[62deg]',
-    },
-    {
-      location: 'top-[12rem] right-[3rem]',
-      rotate: '-rotate-[150deg]',
-    },
-    {
-      location: 'top-[12.5rem] left-[4.2rem]',
-      rotate: '-rotate-[70deg]',
-    },
-    {
-      location: 'top-[6.5rem] right-[1.6rem]',
-      rotate: 'rotate-[155deg]',
-    },
-    {
-      location: 'top-[7.6rem] left-[2rem]',
-      rotate: '-rotate-2',
-    },
-  ];
-
   const renderSkullImg = skullImgMetaList.map(({ location = '', rotate = '' }, index: number) => (
     <Image
       key={index}
@@ -74,7 +49,7 @@ export default function Start({ handleStep }: StartProps) {
       <UniqueText Tag="h1" font="sans" size="lg" className="text-center pt-8">
         커피내기
         <br />
-        <strong className="text-4xl font-normal">복불복</strong>
+        <span className="text-[3.625rem] leading-[103.8%]">복불복</span>
       </UniqueText>
       <div className="pt-8 relative w-[335px] h-[321px]">
         {renderSkullImg}
@@ -93,3 +68,28 @@ export default function Start({ handleStep }: StartProps) {
     </>
   );
 }
+
+const FADE_IN_DURATION = 1500;
+
+const skullImgMetaList = [
+  {
+    location: 'top-[3.5rem] right-[7rem]',
+    rotate: 'rotate-[62deg]',
+  },
+  {
+    location: 'top-[12rem] right-[3rem]',
+    rotate: '-rotate-[150deg]',
+  },
+  {
+    location: 'top-[12.5rem] left-[4.2rem]',
+    rotate: '-rotate-[70deg]',
+  },
+  {
+    location: 'top-[6.5rem] right-[1.6rem]',
+    rotate: 'rotate-[155deg]',
+  },
+  {
+    location: 'top-[7.6rem] left-[2rem]',
+    rotate: '-rotate-2',
+  },
+];
