@@ -91,6 +91,9 @@ devDependencies:
   eslint-plugin-react-hooks:
     specifier: ^4.6.0
     version: 4.6.0(eslint@8.45.0)
+  file-loader:
+    specifier: ^6.2.0
+    version: 6.2.0(webpack@5.88.2)
   husky:
     specifier: ^8.0.3
     version: 8.0.3
@@ -4512,6 +4515,17 @@ packages:
     engines: {node: ^10.12.0 || >=12.0.0}
     dependencies:
       flat-cache: 3.0.4
+
+  /file-loader@6.2.0(webpack@5.88.2):
+    resolution: {integrity: sha512-qo3glqyTa61Ytg4u73GultjHGjdRyig3tG6lPtyX/jOEJvHif9uB0/OCI2Kif6ctF3caQTW2G5gym21oAsI4pw==}
+    engines: {node: '>= 10.13.0'}
+    peerDependencies:
+      webpack: ^4.0.0 || ^5.0.0
+    dependencies:
+      loader-utils: 2.0.4
+      schema-utils: 3.3.0
+      webpack: 5.88.2
+    dev: true
 
   /file-saver@2.0.5:
     resolution: {integrity: sha512-P9bmyZ3h/PRG+Nzga+rbdI4OEpNDzAVyy74uVO9ATgzLK6VtAsYybF/+TOCvrc0MO793d6+42lLyZTw7/ArVzA==}

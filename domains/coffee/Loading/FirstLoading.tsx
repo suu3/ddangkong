@@ -1,5 +1,3 @@
-import Image from 'next/image';
-import loadingImage from '@/public/coffee/loading.gif';
 import UniqueText from '@/components/UniqueText';
 import AudioPlayer from '@/components/AudioPlayer';
 import usePlayAudio from '@/lib/hooks/usePlayAudio';
@@ -34,7 +32,17 @@ const FirstLoading = () => {
         </UniqueText>
       </div>
       <div className="relative h-44	w-24">
-        <Image loading="eager" className="animate-pulse" src={loadingImage} fill sizes="100%" alt="" />
+        <video
+          className="animate-pulse"
+          type="video/mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          src={'/coffee/loading.mp4'}
+        ></video>
+
+        {/* <Image loading="eager" src={loadingImage} fill sizes="100%" alt="" /> */}
       </div>
     </article>
   );
