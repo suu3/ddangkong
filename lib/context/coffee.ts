@@ -1,17 +1,5 @@
 import React from 'react';
-import { CoffeeActionType, SoundActionType } from '../reducer/coffee';
-
-export interface CoffeeState {
-  boom: number;
-  total: number;
-}
-
-/**
- * Sound State는 전체 음소거 상태를 제어한다.
- */
-export interface allMuteState {
-  isAllMuted: boolean;
-}
+import { CoffeeActionType, CoffeeState, SoundActionType, allMuteState } from '../reducer/coffee';
 
 export const initialCoffeeState: CoffeeState = {
   boom: 0,

@@ -1,4 +1,14 @@
-import { CoffeeState, allMuteState } from '../context/coffee';
+export interface CoffeeState {
+  boom: number;
+  total: number;
+}
+
+/**
+ * Sound State는 전체 음소거 상태를 제어한다.
+ */
+export interface allMuteState {
+  isAllMuted: boolean;
+}
 
 export type CoffeeActionType = 'INCREASE_BOOM' | 'DECREASE_BOOM' | 'INCREASE_TOTAL' | 'DECREASE_TOTAL';
 
