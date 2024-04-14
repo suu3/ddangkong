@@ -2,6 +2,7 @@ import GameMenu from '@/components/@layout/GameMenu';
 import UniqueText from '@/components/UniqueText';
 import Image from 'next/image';
 import coffeeLogo from '@/public/logos/games/coffee.svg';
+import rouletteLogo from '@/public/logos/games/roulette.svg';
 import { COFFEE_HOME, ROULETTE_HOME } from '@/lib/constants/serviceUrls';
 
 export default function Main() {
@@ -16,7 +17,7 @@ export default function Main() {
           title="커피내기 복불복"
           image={<Image src={coffeeLogo} width={64} height={120} alt="" />}
         />
-        <GameMenu link={ROULETTE_HOME} title="운명의 돌림판" />
+        <GameMenu link={ROULETTE_HOME} title="운명의 돌림판" image={<Image src={rouletteLogo} width={110} alt="" />} />
       </div>
     </div>
   );

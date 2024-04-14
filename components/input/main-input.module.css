@@ -1,0 +1,23 @@
+.input {
+  width: 280px;
+  padding: 11px;
+  height: 40px;
+
+  border: none;
+  background-image: url('/input/border.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  color: theme(colors.milkChocolate);
+  font-family: UhBeeSeulvely;
+  font-weight: 400;
+  font-size: 16px;
+
+  &:focus {
+    outline: none;
+  }
+  &::placeholder {
+    color: theme(colors.milkChocolate);
+  }
+}

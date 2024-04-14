@@ -6,6 +6,7 @@ import Image from 'next/image';
 import useStep from '@/lib/hooks/useStep';
 import prevBtnIcon from '@/public/button/button_prev.svg';
 import Start from '@/domains/roulette/Start';
+import Order from '@/domains/roulette/Order';
 
 export default function Coffee() {
   const [step, Container, handleStep] = useStep(0);
@@ -26,7 +27,8 @@ export default function Coffee() {
       {renderPrevBtn}
       <Container curStep={step}>
         <Start handleStep={handleStep} />
-        {/* <Order state={orderState} handleStep={handleStep} />
+        <Order handleStep={handleStep} />
+        {/* 
           <Shuffle cnt={orderState.total} handleStep={handleStep} />
           <Loading /> */}
       </Container>

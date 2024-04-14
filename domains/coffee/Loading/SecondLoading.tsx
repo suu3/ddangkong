@@ -139,7 +139,7 @@ const SecondLoading = ({ cnt, result = '', changed = false }: SecondLoadingProps
         </UniqueText>
       </BubbleContainer>
 
-      <div ref={containerRef} className="flex flex-col justify-center align-center mb-16 mt-6 min-h-[20rem]">
+      <div ref={containerRef} className="flex flex-col justify-center items-center mb-16 mt-6 min-h-[20rem]">
         {gridCards}
       </div>
     </article>
