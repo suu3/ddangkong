@@ -34,7 +34,6 @@ const FirstLoading = () => {
       <div className="relative h-44	w-24">
         <video
           className="animate-pulse"
-          type="video/mp4"
           autoPlay
           loop
           muted
