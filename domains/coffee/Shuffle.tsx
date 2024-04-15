@@ -144,7 +144,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
 
       <div
         ref={containerRef}
-        className="flex flex-col justify-center align-center mb-[2.5rem] mt-6 min-h-[20rem] relative"
+        className="flex flex-col justify-center items-center mb-[2.5rem] mt-6 min-h-[20rem] relative"
       >
         {gridDivs}
       </div>

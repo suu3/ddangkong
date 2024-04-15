@@ -14,12 +14,15 @@ import usePlayAudio from '@/lib/hooks/usePlayAudio';
 import { coffeeReducer, CoffeeActionType, soundReducer, SoundActionType } from '@/lib/reducer/coffee';
 import { CoffeeContext, initialCoffeeState, initialallMuteState } from '@/lib/context/coffee';
 import prevBtnIcon from '@/public/button/button_prev.svg';
+import { BGM_URL } from '@/lib/constants/coffee';
 
 export default function Coffee() {
   const [step, Container, handleStep] = useStep(0);
   const [orderState, orderDispatch] = useReducer(coffeeReducer, initialCoffeeState);
   const [allMuteState, soundDispatch] = useReducer(soundReducer, initialallMuteState);
   const { playerRef, playSound, pauseSound } = usePlayAudio();
+
+  const isMainStep = step === 0;
 
   const handleOrder = (type: CoffeeActionType) => {
     orderDispatch({ type });
@@ -68,8 +71,8 @@ export default function Coffee() {
           handleAllMute,
         }}
       >
-        <AudioPlayer volume={0.4} ref={playerRef} src="/sound/bgm.mp3" muted={allMuteState.isAllMuted} />
-        <PlayerButton onSoundToggle={onSoundToggle} muted={allMuteState.isAllMuted} />
+        {!isMainStep && <AudioPlayer volume={0.4} ref={playerRef} src={BGM_URL} muted={allMuteState.isAllMuted} />}
+        {!isMainStep && <PlayerButton onSoundToggle={onSoundToggle} muted={allMuteState.isAllMuted} />}
         <Container curStep={step}>
           <Start handleStep={handleStep} />
           <Order state={orderState} handleStep={handleStep} />

@@ -1,0 +1,37 @@
+.rotate {
+  --animation-duration: 8s;
+  --animation-timing-function: linear;
+  --animation-iteration-count: infinite;
+
+  animation: rotate var(--animation-duration) var(--animation-timing-function) var(--animation-iteration-count);
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  12.5% {
+    transform: rotate(90deg);
+  }
+  25% {
+    transform: rotate(90deg);
+  }
+  37.5% {
+    transform: rotate(180deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  62.5% {
+    transform: rotate(270deg);
+  }
+  75% {
+    transform: rotate(270deg);
+  }
+  87.5% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

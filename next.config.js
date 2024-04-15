@@ -4,6 +4,20 @@ const isProduction = process.env.NODE_ENV === 'production';
 const runtimeCaching = require('next-pwa/cache.js');
 
 const nextConfig = {
+  webpack: (config, options) => {
+    config.module.rules.push({
+      test: /\.(mp4)$/i,
+      use: [
+        options.defaultLoaders.babel,
+        {
+          loader: 'file-loader',
+        },
+      ],
+    });
+
+    return config;
+  },
+
   // redirects: async () => {
   //   return [
   //     {
