@@ -14,7 +14,7 @@ export type RouletteActionType = 'ADD_ITEM';
 
 export interface RouletteAction {
   type: RouletteActionType;
-  payload: string[];
+  payload: String[];
 }
 
 export type SoundActionType = 'UNMUTE_SOUND' | 'MUTE_SOUND';
