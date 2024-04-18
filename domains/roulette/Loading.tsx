@@ -20,16 +20,17 @@ const Loading = ({ handleStep }: LoadingProps) => {
   useEffect(() => {
     if (!document) return;
 
-    const canvas = document.getElementById('wheelCanvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('wheelCanvas') as HTMLCanvasElement;
+    const ctx = canvas?.getContext('2d');
     const img = document?.getElementById('wheelImage');
 
-    const radius = canvas.width / 2; // 룰렛의 반지름
+    const radius = canvas?.width / 2; // 룰렛의 반지름
 
     spinRoulette();
     // console.log('ddd', total);
     // 룰렛 그리기
     function drawRoulette() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 클리어
       ctx.save(); // 현재 상태를 저장
       ctx.translate(canvas.width / 2, canvas.height / 2); // 캔버스의 중심으로 이동
@@ -104,7 +105,7 @@ const Loading = ({ handleStep }: LoadingProps) => {
           requestAnimationFrame(animate);
         } else {
           // 회전 종료
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx?.clearRect(0, 0, canvas.width, canvas.height);
           drawRoulette(); // 최종 상태 그리기
         }
       }

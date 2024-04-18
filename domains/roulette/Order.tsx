@@ -28,7 +28,7 @@ export default function Order({ handleStep, state }: OrderProps) {
   // const { angle, total } = orderState;
   const { playerRef, playSound, pauseSound } = usePlayAudio();
   const [input, setInput] = useState('');
-  const itemsRef = useRef([]);
+  const itemsRef = useRef<string[]>([]);
   const items = itemsRef?.current;
 
   const handleChangeText = (e: ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +42,7 @@ export default function Order({ handleStep, state }: OrderProps) {
     setInput('');
   };
 
-  const handleKeyPress = event => {
+  const handleKeyPress = (event: any) => {
     if (event.key === 'Enter') {
       handleSubmit();
     }
@@ -53,7 +53,7 @@ export default function Order({ handleStep, state }: OrderProps) {
   };
 
   function adjustCanvasResolution() {
-    const canvas = document.getElementById('wheelCanvas');
+    const canvas = document.getElementById('wheelCanvas') as HTMLCanvasElement;
     const ctx = canvas.getContext('2d');
 
     // 디바이스의 픽셀 비율을 구함
@@ -70,7 +70,7 @@ export default function Order({ handleStep, state }: OrderProps) {
     canvas.style.height = `${rect.height}px`;
 
     // `canvas`의 스케일을 조정하여 모든 드로잉이 디바이스 픽셀 비율을 반영하도록 함
-    ctx.scale(dpr, dpr);
+    ctx?.scale(dpr, dpr);
   }
 
   useEffect(() => {
@@ -79,18 +79,18 @@ export default function Order({ handleStep, state }: OrderProps) {
     };
   }, []);
 
-  const img = document?.getElementById('wheelImage');
-  const canvas = document?.getElementById('wheelCanvas');
+  const img = document?.getElementById('wheelImage') as HTMLImageElement;
+  const canvas = document?.getElementById('wheelCanvas') as HTMLCanvasElement;
   const ctx = canvas?.getContext('2d');
 
   function drawImageOnCanvas() {
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
     adjustCanvasResolution();
   }
 
-  function addItem(input) {
+  function addItem(input: string) {
     const items = itemsRef.current;
-    const canvas = document.getElementById('wheelCanvas');
+    const canvas = document.getElementById('wheelCanvas') as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
 
     itemsRef.current = [...items, input];
@@ -106,8 +106,8 @@ export default function Order({ handleStep, state }: OrderProps) {
     drawItems(); // 선과 텍스트를 포함하여 항목을 그립니다.
   }
 
-  function clearCanvas(ctx, canvas) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  function clearCanvas(ctx: CanvasRenderingContext2D | null, canvas: HTMLCanvasElement) {
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   function drawItems() {
@@ -124,7 +124,8 @@ export default function Order({ handleStep, state }: OrderProps) {
       startAngle = endAngle;
     }
 
-    function drawLine(startAngle, endAngle) {
+    function drawLine(startAngle: number, endAngle: number) {
+      if (!ctx) return;
       const x = canvas.width / 2;
       const y = canvas.height / 2;
       const radius = canvas.width / 2;
@@ -140,7 +141,8 @@ export default function Order({ handleStep, state }: OrderProps) {
     }
   }
 
-  function drawTextCenter(text) {
+  function drawTextCenter(text: string) {
+    if (!ctx) return;
     const x = canvas.width / 2;
     const y = canvas.height / 2;
 
@@ -153,7 +155,8 @@ export default function Order({ handleStep, state }: OrderProps) {
     ctx.restore(); // 저장된 상태로 복원
   }
 
-  function drawText(text, startAngle, endAngle) {
+  function drawText(text: string, startAngle: number, endAngle: number) {
+    if (!ctx) return;
     const x = canvas.width / 2;
     const y = canvas.height / 2;
     const radius = canvas.width / 4; // 텍스트 위치를 위한 반지름 조정

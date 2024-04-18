@@ -1,6 +1,6 @@
 export interface RouletteState {
   angle: number;
-  total: String[];
+  total: string[];
 }
 
 /**
@@ -14,7 +14,7 @@ export type RouletteActionType = 'ADD_ITEM';
 
 export interface RouletteAction {
   type: RouletteActionType;
-  payload: String[];
+  payload: string[];
 }
 
 export type SoundActionType = 'UNMUTE_SOUND' | 'MUTE_SOUND';
