@@ -91,16 +91,17 @@ const Loading = ({ handleStep }: LoadingProps) => {
     }
 
     function spinRoulette() {
-      let speed = 10; // 초기 속도
+      let speed = Math.random() * 20 + 5; // 초기 속도를 랜덤하게 설정 (5 ~ 25 사이의 값)
       const spinTime = 5000; // 회전 시간 (ms)
       const startTime = Date.now(); // 시작 시간
+      const deceleration = Math.random() * 0.01 + 0.98; // 감속 비율을 랜덤하게 설정 (0.98 ~ 0.99 사이의 값)
 
       function animate() {
         const currentTime = Date.now();
         const elapsedTime = currentTime - startTime;
         if (elapsedTime < spinTime) {
           currentAngle += speed;
-          speed *= 0.99; // 감속 로직
+          speed *= deceleration; // 감속 로직
           drawRoulette();
           requestAnimationFrame(animate);
         } else {
