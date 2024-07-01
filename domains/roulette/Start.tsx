@@ -14,8 +14,7 @@ interface StartProps {
 }
 
 export default function Start({ handleStep }: StartProps) {
-  const [randomNum, setRandomNum] = useState(0);
-
+  // const [randomNum, setRandomNum] = useState(0);
   return (
     <>
       <UniqueText Tag="h1" font="sans" size="lg" className="text-center pt-8">

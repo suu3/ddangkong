@@ -211,7 +211,7 @@ export default function Order({ handleStep, state }: OrderProps) {
       </div>
       <div className="mt-[16px] mb-[2.5rem] flex justify-center items-center gap-[8px]">
         <MainInput
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
           onChange={handleChangeText}
           placeholder="내용을 입력해 주세요."
           value={input}
