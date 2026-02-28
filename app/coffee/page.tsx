@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useReducer } from 'react';
+import React, { useCallback, useEffect, useReducer } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Loading from '@/domains/coffee/Loading';
@@ -51,11 +51,11 @@ export default function Coffee() {
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
   const isMainStep = currentStep === 0;
 
-  const pushRealtimeState = async (nextState: CoffeeGameState) => {
+  const pushRealtimeState = useCallback(async (nextState: CoffeeGameState) => {
     if (!roomId) return;
     setRealtimeState(nextState);
     await updateRoomState(roomId, nextState);
-  };
+  }, [roomId]);
 
   const handleOrder = (type: CoffeeActionType) => {
     if (isRealtimeEnabled && !isHost) return;
@@ -153,7 +153,7 @@ export default function Coffee() {
       orderState: currentOrderState,
       result,
     });
-  }, [currentStep, currentOrderState, isHost, isRealtimeEnabled, realtimeState.result]);
+  }, [currentStep, currentOrderState, isHost, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
 
   useEffect(() => {
     playSound(playerRef?.current?.audio?.current);

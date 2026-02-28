@@ -14,7 +14,7 @@ interface LoadingProps {
   resultIndex: number | null;
 }
 
-const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
+const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
   const { orderState } = useContext(RouletteContext);
   const { total } = orderState;
   const currentAngleRef = useRef(0);
@@ -57,13 +57,9 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
         const startAngle = currentAngleRef.current;
         const endAngle = startAngle + angleIncrement;
 
-        // 세그먼트의 텍스트
-        const angle = (endAngle + startAngle) / 2 - 90; // 부채꼴의 중앙 각도
-        const radians = (angle * Math.PI) / 180;
+      if (total.length === 1) {
         ctx.save();
-
-        ctx.translate(x, y); // 텍스트 위치를 세그먼트 중앙으로 조정
-        ctx.rotate(radians + Math.PI / 2); // 텍스트가 항상 올바른 방향으로 표시되도록 회전
+        ctx.translate(x, y);
         ctx.textAlign = 'center';
         ctx.font = '700 20px UhBeeTokki';
         ctx.fillText(total[0], 0, 0);

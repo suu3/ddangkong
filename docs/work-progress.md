@@ -16,6 +16,7 @@
 - 기존 room 데이터 스키마와 신규 상태를 혼용하면 예상치 못한 화면 상태가 발생할 수 있습니다.
 
 ## 사용자가 해야 할 일
+- TOC 화면이 포함된 파일 경로 또는 해당 기능 브랜치 정보를 공유해주세요.
 - `.env`에 Supabase 환경변수 설정
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`

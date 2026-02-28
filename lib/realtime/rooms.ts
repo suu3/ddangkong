@@ -16,8 +16,8 @@ const getHeaders = () => {
   }
 
   return {
-    apikey: config.anonKey,
-    Authorization: `Bearer ${config.anonKey}`,
+    apikey: config.publishableKey,
+    Authorization: `Bearer ${config.publishableKey}`,
     'Content-Type': 'application/json',
   };
 };

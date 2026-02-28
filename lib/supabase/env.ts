@@ -1,12 +1,18 @@
-export const getSupabaseConfig = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export interface SupabaseConfig {
+  url: string;
+  publishableKey: string;
+}
 
-  if (!url || !anonKey) {
+export const getSupabaseConfig = (): SupabaseConfig | null => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !publishableKey) {
     return null;
   }
 
-  return { url, anonKey };
+  return { url, publishableKey };
 };
 
 export const hasSupabaseConfig = () => Boolean(getSupabaseConfig());
