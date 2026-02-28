@@ -1,7 +1,7 @@
 import UniqueText from '@/components/UniqueText';
 // import AudioPlayer from '@/components/AudioPlayer';
 // import usePlayAudio from '@/lib/hooks/usePlayAudio';
-import { Fragment, useContext, useEffect, useRef } from 'react';
+import { Fragment, useContext, useEffect } from 'react';
 import { RouletteContext } from '@/lib/context/roulette';
 import clsx from 'clsx';
 import Image from 'next/image';
@@ -13,9 +13,9 @@ interface LoadingProps {
   resultIndex?: number | null;
 }
 
-const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
+const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
   const { orderState } = useContext(RouletteContext);
-  const { angle, total } = orderState;
+  const { total } = orderState;
   let currentAngle = 0; // 현재 각도
 
   useEffect(() => {
@@ -23,8 +23,6 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
 
     const canvas = document.getElementById('wheelCanvas') as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
-    const img = document?.getElementById('wheelImage');
-
     const radius = canvas?.width / 2; // 룰렛의 반지름
 
     spinRoulette();
@@ -42,19 +40,13 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
       const x = canvas.width / 2;
       const y = canvas.height / 2;
 
-      if (total.length <= 1) {
-        const totalDegrees = 360;
-        const angleIncrement = totalDegrees / total.length;
-        const startAngle = currentAngle;
-        const endAngle = startAngle + angleIncrement;
+      if (total.length === 0) {
+        return;
+      }
 
-        // 세그먼트의 텍스트
-        const angle = (endAngle + startAngle) / 2 - 90; // 부채꼴의 중앙 각도
-        const radians = (angle * Math.PI) / 180;
+      if (total.length === 1) {
         ctx.save();
-
-        ctx.translate(x, y); // 텍스트 위치를 세그먼트 중앙으로 조정
-        ctx.rotate(radians + Math.PI / 2); // 텍스트가 항상 올바른 방향으로 표시되도록 회전
+        ctx.translate(x, y);
         ctx.textAlign = 'center';
         ctx.font = '700 20px UhBeeTokki';
         ctx.fillText(total[0], 0, 0);

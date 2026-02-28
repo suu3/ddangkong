@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useReducer } from 'react';
+import React, { useCallback, useEffect, useReducer } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -42,11 +42,11 @@ export default function Coffee() {
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
 
-  const pushRealtimeState = async (nextState: RouletteGameState) => {
+  const pushRealtimeState = useCallback(async (nextState: RouletteGameState) => {
     if (!roomId) return;
     setRealtimeState(nextState);
     await updateRoomState(roomId, nextState);
-  };
+  }, [roomId]);
 
   const handleOrder = ({ type, payload }: RouletteAction) => {
     if (isRealtimeEnabled && !isHost) return;
@@ -137,7 +137,7 @@ export default function Coffee() {
       orderState: currentOrderState,
       resultIndex,
     });
-  }, [currentOrderState, currentStep, isHost, isRealtimeEnabled, realtimeState.resultIndex]);
+  }, [currentOrderState, currentStep, isHost, isRealtimeEnabled, pushRealtimeState, realtimeState.resultIndex]);
 
   return (
     <div className="relative">
