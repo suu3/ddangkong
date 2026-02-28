@@ -1,26 +1,24 @@
 # 작업 진행상황
 
 ## 현재 상태
-- 커피내기 실시간 방에서 결과값(`result`)을 room 상태로 저장하도록 반영했습니다.
-- 커피내기 Loading 단계에서 host/viewer가 같은 결과를 사용하도록 동기화했습니다.
-- 커피내기 결과 페이지 이동 시 `roomId`, `role` 쿼리를 유지하도록 반영했습니다.
-- 룰렛 실시간 방에서 회전 결과 인덱스(`resultIndex`)를 room 상태로 저장하도록 반영했습니다.
-- 룰렛 Loading 회전 로직을 결과 인덱스 기반(결정형)으로 변경해 참여자 간 동일 결과를 보도록 반영했습니다.
+- Supabase 설정 로더의 반환 키를 `publishableKey`로 명확화하여 클라이언트에서 Secret key를 사용할 여지를 줄였습니다.
+- 실시간 REST/WebSocket 코드에서 `anonKey` 참조를 모두 `publishableKey`로 정리했습니다.
+- `docs/supabase-rls-guide.md` 문서를 추가해 `rooms` 테이블의 RLS 활성화 및 정책 SQL 예시를 정리했습니다.
+- README에 RLS/Policy 가이드 문서 링크를 추가했습니다.
 
 ## Next Action Item
-1. Supabase 실환경(2대 이상 기기)에서 host/viewer 동시 접속으로 커피내기/룰렛 동기화 검증
-2. 룰렛 결과 텍스트(당첨 항목) UI 노출 및 room 상태에 결과 문자열 함께 저장
-3. 네트워크 지연/재접속 상황에서 step 복구 및 중복 업데이트 방지 처리
-4. React Hook 의존성 경고(`pushRealtimeState` 등) 정리
+1. Supabase DB에 RLS/Policy SQL 실제 적용
+2. 실기기 2대(Host/Viewer)에서 커피내기/룰렛 방 생성-조회-동기화 검증
+3. rooms 만료 정책(`expires_at`) 설계 및 정리 배치 전략 확정
 
 ## 주의사항
-- 현재 로컬 단독 실행에서는 실시간 동기화 검증이 제한됩니다(방 기능은 Supabase 환경변수 필요).
-- 룰렛은 결과 인덱스를 동기화하지만, 결과를 별도 결과 페이지로 노출하는 UX는 아직 없습니다.
-- 실시간 방 상태에 저장되는 데이터 스키마가 변경되었으므로 기존 room 데이터와 혼용 시 예외 상황이 생길 수 있습니다.
+- 현재 정책 예시는 퍼블릭 링크 공유 기준의 최소 구성입니다. 운영 환경에서는 만료/남용 방지 정책이 필요합니다.
+- Secret key(`sb_secret_...`)는 서버 전용이며 `NEXT_PUBLIC_*` 환경변수에 넣으면 안 됩니다.
+- `.env.local` 파일은 절대 커밋/업로드하면 안 됩니다.
 
 ## 사용자가 해야 할 일
-- `.env`에 Supabase 환경변수 설정
+- Supabase SQL Editor에서 `docs/supabase-rls-guide.md`의 정책을 적용
+- `.env.local`에 아래 값 설정
   - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- 실제 모바일 2대 이상에서 링크 공유(Host/Viewer) 동작 확인
-- 운영 DB에서 room 만료/정리 정책(예: 오래된 room 삭제) 적용 검토
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- 2대 이상 기기에서 링크 공유 동작과 실시간 반영을 점검

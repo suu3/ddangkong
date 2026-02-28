@@ -17,7 +17,7 @@ export const subscribeRoomState = <T>({ roomId, onState, onError }: SubscribeOpt
   }
 
   const url = new URL(config.url);
-  const socketUrl = `wss://${url.host}/realtime/v1/websocket?apikey=${config.anonKey}&vsn=1.0.0`;
+  const socketUrl = `wss://${url.host}/realtime/v1/websocket?apikey=${config.publishableKey}&vsn=1.0.0`;
   const topic = `realtime:public:rooms:id=eq.${roomId}`;
   const socket = new WebSocket(socketUrl);
 
