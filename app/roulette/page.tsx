@@ -15,11 +15,14 @@ import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
+import { getServerActor } from '@/lib/realtime/clientActor';
 
 interface RouletteGameState {
   step: number;
   orderState: typeof initialRouletteState;
   resultIndex: number | null;
+  revision: number;
+  lastActor: string | null;
 }
 
 export default function Coffee() {
@@ -27,34 +30,57 @@ export default function Coffee() {
   const searchParams = useSearchParams();
 
   const roomId = searchParams.get('roomId');
-  const role = (searchParams.get('role') as 'host' | 'viewer') ?? 'host';
   const isRealtimeEnabled = Boolean(roomId);
-  const isHost = role !== 'viewer';
 
   const [step, Container, handleStep] = useStep(0);
+  const [clientActor, setClientActor] = React.useState('guest');
   const [orderState, orderDispatch] = useReducer(rouletteReducer, initialRouletteState);
   const [localResultIndex, setLocalResultIndex] = React.useState<number | null>(null);
   const [realtimeState, setRealtimeState] = React.useState<RouletteGameState>({
     step: 0,
     orderState: initialRouletteState,
     resultIndex: null,
+    revision: 0,
+    lastActor: null,
   });
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
 
-  const pushRealtimeState = useCallback(async (nextState: RouletteGameState) => {
+  const pushRealtimeState = useCallback(async (nextState: Omit<RouletteGameState, 'revision' | 'lastActor'>) => {
     if (!roomId) return;
-    setRealtimeState(nextState);
-    await updateRoomState(roomId, nextState);
-  }, [roomId]);
+
+    const previousState = realtimeState;
+    const optimisticState: RouletteGameState = {
+      ...nextState,
+      revision: previousState.revision + 1,
+      lastActor: clientActor,
+    };
+
+    setRealtimeState(optimisticState);
+
+    try {
+      await updateRoomState(roomId, optimisticState, previousState.revision);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Realtime conflict')) {
+        const latest = await getRoom<RouletteGameState>(roomId);
+        if (latest) {
+          setRealtimeState(latest.game_state);
+        } else {
+          setRealtimeState(previousState);
+        }
+        return;
+      }
+
+      setRealtimeState(previousState);
+      throw error;
+    }
+  }, [clientActor, realtimeState, roomId]);
 
   const handleOrder = ({ type, payload }: RouletteAction) => {
-    if (isRealtimeEnabled && !isHost) return;
-
     if (isRealtimeEnabled) {
       const nextOrderState = rouletteReducer(currentOrderState, { type, payload });
-      pushRealtimeState({
+      void pushRealtimeState({
         step: currentStep,
         orderState: nextOrderState,
         resultIndex: null,
@@ -67,11 +93,9 @@ export default function Coffee() {
   };
 
   const handleStepWithSync = (type: 'next' | 'prev') => {
-    if (isRealtimeEnabled && !isHost) return;
-
     if (isRealtimeEnabled) {
       const nextStep = type === 'next' ? currentStep + 1 : Math.max(0, currentStep - 1);
-      pushRealtimeState({
+      void pushRealtimeState({
         step: nextStep,
         orderState: currentOrderState,
         resultIndex: type === 'prev' ? null : realtimeState.resultIndex,
@@ -101,11 +125,27 @@ export default function Coffee() {
       step: 0,
       orderState: initialRouletteState,
       resultIndex: null,
+      revision: 0,
+      lastActor: clientActor,
     };
 
     const room = await createRoom('roulette', state);
-    router.push(`/roulette?roomId=${room.id}&role=host`);
+    router.push(`/roulette?roomId=${room.id}`);
   };
+
+
+  useEffect(() => {
+    let mounted = true;
+
+    getServerActor().then(actor => {
+      if (!mounted) return;
+      setClientActor(actor);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!roomId) return;
@@ -132,17 +172,17 @@ export default function Coffee() {
   }, [roomId]);
 
   useEffect(() => {
-    if (!isRealtimeEnabled || !isHost) return;
+    if (!isRealtimeEnabled) return;
     if (currentStep !== 2 || realtimeState.resultIndex !== null) return;
     if (currentOrderState.total.length === 0) return;
 
     const resultIndex = Math.floor(Math.random() * currentOrderState.total.length);
-    pushRealtimeState({
+    void pushRealtimeState({
       step: currentStep,
       orderState: currentOrderState,
       resultIndex,
     });
-  }, [currentOrderState, currentStep, isHost, isRealtimeEnabled, pushRealtimeState, realtimeState.resultIndex]);
+  }, [currentOrderState, currentStep, isRealtimeEnabled, pushRealtimeState, realtimeState.resultIndex]);
 
   useEffect(() => {
     if (isRealtimeEnabled) return;
@@ -157,9 +197,10 @@ export default function Coffee() {
       <RoomSharePanel
         gameType="roulette"
         roomId={roomId}
-        role={isHost ? 'host' : 'viewer'}
+        localActor={clientActor}
         hasConfig={hasSupabaseConfig()}
         onCreateRoom={handleCreateRoom}
+        lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
       />
       {renderPrevBtn}
       <RouletteContext.Provider

@@ -6,12 +6,13 @@ import MainButton from '@/components/button/MainButton';
 interface RoomSharePanelProps {
   gameType: 'coffee' | 'roulette';
   roomId: string | null;
-  role: 'host' | 'viewer';
+  localActor: string;
   hasConfig: boolean;
+  lastActor?: string | null;
   onCreateRoom: () => Promise<void>;
 }
 
-export default function RoomSharePanel({ gameType, roomId, role, hasConfig, onCreateRoom }: RoomSharePanelProps) {
+export default function RoomSharePanel({ gameType, roomId, localActor, hasConfig, onCreateRoom, lastActor }: RoomSharePanelProps) {
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -19,7 +20,8 @@ export default function RoomSharePanel({ gameType, roomId, role, hasConfig, onCr
     if (!roomId || typeof window === 'undefined') return '';
     const current = new URL(window.location.href);
     current.searchParams.set('roomId', roomId);
-    current.searchParams.set('role', 'viewer');
+    current.searchParams.delete('role');
+    current.searchParams.delete('user');
     return current.toString();
   }, [roomId]);
 
@@ -55,13 +57,13 @@ export default function RoomSharePanel({ gameType, roomId, role, hasConfig, onCr
 
   return (
     <div className="px-4 pt-4 text-xs">
-      <p className="font-bold">방 연결됨 ({role === 'host' ? '호스트' : '참여자'})</p>
+      <p className="font-bold">방 연결됨 (멀티 컨트롤)</p>
+      <p>내 식별자: {localActor}</p>
+      <p>최근 조작자: {lastActor ?? '-'} </p>
       <p className="break-all">roomId: {roomId}</p>
-      {role === 'host' && (
-        <MainButton className="mt-2" variant="outlined" color="chocolate" onClick={handleCopy}>
-          {copied ? '링크 복사됨!' : '참여 링크 복사'}
-        </MainButton>
-      )}
+      <MainButton className="mt-2" variant="outlined" color="chocolate" onClick={handleCopy}>
+        {copied ? '링크 복사됨!' : '공유 링크 복사'}
+      </MainButton>
     </div>
   );
 }

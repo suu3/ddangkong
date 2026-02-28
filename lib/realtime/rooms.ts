@@ -8,6 +8,10 @@ interface RoomRow<T> {
   created_at: string;
 }
 
+interface RealtimeStateWithRevision {
+  revision?: number;
+}
+
 const getHeaders = () => {
   const config = getSupabaseConfig();
 
@@ -72,11 +76,20 @@ export const getRoom = async <T>(roomId: string) => {
   return data[0] ?? null;
 };
 
-export const updateRoomState = async <T>(roomId: string, gameState: T) => {
+export const updateRoomState = async <T extends RealtimeStateWithRevision>(
+  roomId: string,
+  gameState: T,
+  expectedRevision?: number
+) => {
   const config = getSupabaseConfig();
   if (!config) throw new Error('Supabase environment variables are missing.');
 
-  const response = await fetch(`${config.url}/rest/v1/rooms?id=eq.${roomId}`, {
+  const revisionFilter =
+    typeof expectedRevision === 'number'
+      ? `&game_state->>revision=eq.${encodeURIComponent(String(expectedRevision))}`
+      : '';
+
+  const response = await fetch(`${config.url}/rest/v1/rooms?id=eq.${roomId}${revisionFilter}`, {
     method: 'PATCH',
     headers: {
       ...getHeaders(),
@@ -93,5 +106,10 @@ export const updateRoomState = async <T>(roomId: string, gameState: T) => {
   }
 
   const data = (await response.json()) as RoomRow<T>[];
+
+  if (typeof expectedRevision === 'number' && !data[0]) {
+    throw new Error('Realtime conflict: stale revision');
+  }
+
   return data[0] ?? null;
 };

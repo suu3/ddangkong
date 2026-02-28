@@ -51,11 +51,9 @@ const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
       const x = canvas.width / 2;
       const y = canvas.height / 2;
 
-      if (total.length <= 1) {
-        const totalDegrees = 360;
-        const angleIncrement = totalDegrees / total.length;
-        const startAngle = currentAngleRef.current;
-        const endAngle = startAngle + angleIncrement;
+      if (total.length === 0) {
+        return;
+      }
 
       if (total.length === 1) {
         ctx.save();
