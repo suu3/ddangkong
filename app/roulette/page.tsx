@@ -19,6 +19,7 @@ import { hasSupabaseConfig } from '@/lib/supabase/env';
 interface RouletteGameState {
   step: number;
   orderState: typeof initialRouletteState;
+  resultIndex: number | null;
 }
 
 export default function Coffee() {
@@ -35,6 +36,7 @@ export default function Coffee() {
   const [realtimeState, setRealtimeState] = React.useState<RouletteGameState>({
     step: 0,
     orderState: initialRouletteState,
+    resultIndex: null,
   });
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
@@ -54,6 +56,7 @@ export default function Coffee() {
       pushRealtimeState({
         step: currentStep,
         orderState: nextOrderState,
+        resultIndex: null,
       });
       return;
     }
@@ -69,6 +72,7 @@ export default function Coffee() {
       pushRealtimeState({
         step: nextStep,
         orderState: currentOrderState,
+        resultIndex: type === 'prev' ? null : realtimeState.resultIndex,
       });
       return;
     }
@@ -91,6 +95,7 @@ export default function Coffee() {
     const state: RouletteGameState = {
       step: 0,
       orderState: initialRouletteState,
+      resultIndex: null,
     };
 
     const room = await createRoom('roulette', state);
@@ -121,6 +126,19 @@ export default function Coffee() {
     };
   }, [roomId]);
 
+  useEffect(() => {
+    if (!isRealtimeEnabled || !isHost) return;
+    if (currentStep !== 2 || realtimeState.resultIndex !== null) return;
+    if (currentOrderState.total.length === 0) return;
+
+    const resultIndex = Math.floor(Math.random() * currentOrderState.total.length);
+    pushRealtimeState({
+      step: currentStep,
+      orderState: currentOrderState,
+      resultIndex,
+    });
+  }, [currentOrderState, currentStep, isHost, isRealtimeEnabled, realtimeState.resultIndex]);
+
   return (
     <div className="relative">
       <RoomSharePanel
@@ -140,7 +158,7 @@ export default function Coffee() {
         <Container curStep={currentStep}>
           <Start handleStep={handleStepWithSync} />
           <Order handleStep={handleStepWithSync} />
-          <Loading handleStep={handleStepWithSync} />
+          <Loading handleStep={handleStepWithSync} resultIndex={isRealtimeEnabled ? realtimeState.resultIndex : null} />
         </Container>
       </RouletteContext.Provider>
     </div>
