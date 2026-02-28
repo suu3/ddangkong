@@ -48,7 +48,7 @@ export default function CoffeeResult() {
     } else {
       playSound(audio);
     }
-  }, [isMuted]);
+  }, [isMuted, pauseSound, playSound, playerRef]);
 
   return (
     <div className="p-[2.33rem]" ref={screenRef}>

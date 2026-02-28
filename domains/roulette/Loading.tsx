@@ -1,7 +1,7 @@
 import UniqueText from '@/components/UniqueText';
 // import AudioPlayer from '@/components/AudioPlayer';
 // import usePlayAudio from '@/lib/hooks/usePlayAudio';
-import { Fragment, useContext, useEffect, useRef } from 'react';
+import { Fragment, useContext, useEffect } from 'react';
 import { RouletteContext } from '@/lib/context/roulette';
 import clsx from 'clsx';
 import Image from 'next/image';
@@ -10,11 +10,12 @@ import pinImage from '@/public/roulette/pin.svg';
 
 interface LoadingProps {
   handleStep: (type: 'next' | 'prev') => void;
+  resultIndex?: number | null;
 }
 
-const Loading = ({ handleStep }: LoadingProps) => {
+const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
   const { orderState } = useContext(RouletteContext);
-  const { angle, total } = orderState;
+  const { total } = orderState;
   let currentAngle = 0; // 현재 각도
 
   useEffect(() => {
@@ -22,8 +23,6 @@ const Loading = ({ handleStep }: LoadingProps) => {
 
     const canvas = document.getElementById('wheelCanvas') as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
-    const img = document?.getElementById('wheelImage');
-
     const radius = canvas?.width / 2; // 룰렛의 반지름
 
     spinRoulette();
@@ -41,19 +40,13 @@ const Loading = ({ handleStep }: LoadingProps) => {
       const x = canvas.width / 2;
       const y = canvas.height / 2;
 
-      if (total.length <= 1) {
-        const totalDegrees = 360;
-        const angleIncrement = totalDegrees / total.length;
-        const startAngle = currentAngle;
-        const endAngle = startAngle + angleIncrement;
+      if (total.length === 0) {
+        return;
+      }
 
-        // 세그먼트의 텍스트
-        const angle = (endAngle + startAngle) / 2 - 90; // 부채꼴의 중앙 각도
-        const radians = (angle * Math.PI) / 180;
+      if (total.length === 1) {
         ctx.save();
-
-        ctx.translate(x, y); // 텍스트 위치를 세그먼트 중앙으로 조정
-        ctx.rotate(radians + Math.PI / 2); // 텍스트가 항상 올바른 방향으로 표시되도록 회전
+        ctx.translate(x, y);
         ctx.textAlign = 'center';
         ctx.font = '700 20px UhBeeTokki';
         ctx.fillText(total[0], 0, 0);
@@ -91,28 +84,36 @@ const Loading = ({ handleStep }: LoadingProps) => {
     }
 
     function spinRoulette() {
-      let speed = Math.random() * 20 + 5; // 초기 속도를 랜덤하게 설정 (5 ~ 25 사이의 값)
-      const spinTime = 5000; // 회전 시간 (ms)
-      const startTime = Date.now(); // 시작 시간
-      const deceleration = Math.random() * 0.01 + 0.98; // 감속 비율을 랜덤하게 설정 (0.98 ~ 0.99 사이의 값)
+      const spinTime = 5000;
+      const startTime = Date.now();
+      const itemCount = Math.max(1, total.length);
+      const anglePerItem = 360 / itemCount;
+      const fallbackIndex = Math.floor(Math.random() * itemCount);
+      const targetIndex = resultIndex ?? fallbackIndex;
+      const targetBaseAngle = targetIndex * anglePerItem + anglePerItem / 2;
+      const finalAngle = 360 * 8 + (360 - targetBaseAngle);
 
       function animate() {
         const currentTime = Date.now();
         const elapsedTime = currentTime - startTime;
-        if (elapsedTime < spinTime) {
-          currentAngle += speed;
-          speed *= deceleration; // 감속 로직
-          drawRoulette();
+        const progress = Math.min(1, elapsedTime / spinTime);
+        const eased = 1 - Math.pow(1 - progress, 3);
+
+        currentAngle = finalAngle * eased;
+        drawRoulette();
+
+        if (progress < 1) {
           requestAnimationFrame(animate);
-        } else {
-          // 회전 종료
-          ctx?.clearRect(0, 0, canvas.width, canvas.height);
-          drawRoulette(); // 최종 상태 그리기
+          return;
         }
+
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        drawRoulette();
       }
+
       animate();
     }
-  }, []);
+  }, [resultIndex, total]);
 
   return (
     <Fragment>
