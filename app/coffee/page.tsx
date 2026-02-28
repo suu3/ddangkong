@@ -21,11 +21,14 @@ import { subscribeRoomState } from '@/lib/realtime/channel';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { getLottery } from '@/lib/utils/random';
+import { getServerActor } from '@/lib/realtime/clientActor';
 
 interface CoffeeGameState {
   step: number;
   orderState: typeof initialCoffeeState;
   result: string | null;
+  revision: number;
+  lastActor: string | null;
 }
 
 export default function Coffee() {
@@ -33,17 +36,18 @@ export default function Coffee() {
   const searchParams = useSearchParams();
 
   const roomId = searchParams.get('roomId');
-  const role = (searchParams.get('role') as 'host' | 'viewer') ?? 'host';
   const isRealtimeEnabled = Boolean(roomId);
-  const isHost = role !== 'viewer';
 
   const [step, Container, handleStep] = useStep(0);
+  const [clientActor, setClientActor] = React.useState('guest');
   const [orderState, orderDispatch] = useReducer(coffeeReducer, initialCoffeeState);
   const [allMuteState, soundDispatch] = useReducer(soundReducer, initialallMuteState);
   const [realtimeState, setRealtimeState] = React.useState<CoffeeGameState>({
     step: 0,
     orderState: initialCoffeeState,
     result: null,
+    revision: 0,
+    lastActor: null,
   });
   const { playerRef, playSound } = usePlayAudio();
 
@@ -51,18 +55,40 @@ export default function Coffee() {
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
   const isMainStep = currentStep === 0;
 
-  const pushRealtimeState = useCallback(async (nextState: CoffeeGameState) => {
+  const pushRealtimeState = useCallback(async (nextState: Omit<CoffeeGameState, 'revision' | 'lastActor'>) => {
     if (!roomId) return;
-    setRealtimeState(nextState);
-    await updateRoomState(roomId, nextState);
-  }, [roomId]);
+
+    const previousState = realtimeState;
+    const optimisticState: CoffeeGameState = {
+      ...nextState,
+      revision: previousState.revision + 1,
+      lastActor: clientActor,
+    };
+
+    setRealtimeState(optimisticState);
+
+    try {
+      await updateRoomState(roomId, optimisticState, previousState.revision);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Realtime conflict')) {
+        const latest = await getRoom<CoffeeGameState>(roomId);
+        if (latest) {
+          setRealtimeState(latest.game_state);
+        } else {
+          setRealtimeState(previousState);
+        }
+        return;
+      }
+
+      setRealtimeState(previousState);
+      throw error;
+    }
+  }, [clientActor, realtimeState, roomId]);
 
   const handleOrder = (type: CoffeeActionType) => {
-    if (isRealtimeEnabled && !isHost) return;
-
     if (isRealtimeEnabled) {
       const nextOrderState = coffeeReducer(currentOrderState, { type });
-      pushRealtimeState({
+      void pushRealtimeState({
         step: currentStep,
         orderState: nextOrderState,
         result: null,
@@ -74,11 +100,9 @@ export default function Coffee() {
   };
 
   const handleStepWithSync = (type: 'next' | 'prev') => {
-    if (isRealtimeEnabled && !isHost) return;
-
     if (isRealtimeEnabled) {
       const nextStep = type === 'next' ? currentStep + 1 : Math.max(0, currentStep - 1);
-      pushRealtimeState({
+      void pushRealtimeState({
         step: nextStep,
         orderState: currentOrderState,
         result: type === 'prev' ? null : realtimeState.result,
@@ -114,10 +138,26 @@ export default function Coffee() {
       step: 0,
       orderState: initialCoffeeState,
       result: null,
+      revision: 0,
+      lastActor: clientActor,
     };
     const room = await createRoom('coffee', state);
-    router.push(`/coffee?roomId=${room.id}&role=host`);
+    router.push(`/coffee?roomId=${room.id}`);
   };
+
+
+  useEffect(() => {
+    let mounted = true;
+
+    getServerActor().then(actor => {
+      if (!mounted) return;
+      setClientActor(actor);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!roomId) return;
@@ -144,16 +184,16 @@ export default function Coffee() {
   }, [roomId]);
 
   useEffect(() => {
-    if (!isRealtimeEnabled || !isHost) return;
+    if (!isRealtimeEnabled) return;
     if (currentStep !== 3 || realtimeState.result) return;
 
     const result = getLottery(currentOrderState.total, currentOrderState.boom).join(',');
-    pushRealtimeState({
+    void pushRealtimeState({
       step: currentStep,
       orderState: currentOrderState,
       result,
     });
-  }, [currentStep, currentOrderState, isHost, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
+  }, [currentStep, currentOrderState, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
 
   useEffect(() => {
     playSound(playerRef?.current?.audio?.current);
@@ -172,9 +212,10 @@ export default function Coffee() {
       <RoomSharePanel
         gameType="coffee"
         roomId={roomId}
-        role={isHost ? 'host' : 'viewer'}
+        localActor={clientActor}
         hasConfig={hasSupabaseConfig()}
         onCreateRoom={handleCreateRoom}
+        lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
       />
       {renderPrevBtn}
       <CoffeeContext.Provider
@@ -194,7 +235,6 @@ export default function Coffee() {
           <Loading
             resultValue={isRealtimeEnabled ? realtimeState.result : undefined}
             roomId={roomId}
-            role={isHost ? 'host' : 'viewer'}
             isRealtimeEnabled={isRealtimeEnabled}
           />
         </Container>
