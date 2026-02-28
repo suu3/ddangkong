@@ -1,29 +1,38 @@
 import UniqueText from '@/components/UniqueText';
 // import AudioPlayer from '@/components/AudioPlayer';
 // import usePlayAudio from '@/lib/hooks/usePlayAudio';
-import { Fragment, useContext, useEffect, useRef } from 'react';
+import { Fragment, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { RouletteContext } from '@/lib/context/roulette';
 import clsx from 'clsx';
 import Image from 'next/image';
 import mainImage from '@/public/roulette/empty-roulette.svg';
 import pinImage from '@/public/roulette/pin.svg';
+import MainButton from '@/components/button/MainButton';
 
 interface LoadingProps {
   handleStep: (type: 'next' | 'prev') => void;
-  resultIndex?: number | null;
+  resultIndex: number | null;
 }
 
 const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
   const { orderState } = useContext(RouletteContext);
-  const { angle, total } = orderState;
-  let currentAngle = 0; // 현재 각도
+  const { total } = orderState;
+  const currentAngleRef = useRef(0);
+  const [isSpinning, setIsSpinning] = useState(true);
+
+  const resultText = useMemo(() => {
+    if (typeof resultIndex !== 'number' || total.length === 0) return '';
+    return total[resultIndex] ?? '';
+  }, [resultIndex, total]);
 
   useEffect(() => {
     if (!document) return;
 
+    setIsSpinning(true);
+    currentAngleRef.current = 0;
+
     const canvas = document.getElementById('wheelCanvas') as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
-    const img = document?.getElementById('wheelImage');
 
     const radius = canvas?.width / 2; // 룰렛의 반지름
 
@@ -35,7 +44,7 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 클리어
       ctx.save(); // 현재 상태를 저장
       ctx.translate(canvas.width / 2, canvas.height / 2); // 캔버스의 중심으로 이동
-      ctx.rotate((currentAngle * Math.PI) / 180); // 현재 각도로 회전
+      ctx.rotate((currentAngleRef.current * Math.PI) / 180); // 현재 각도로 회전
 
       // ctx.drawImage(img, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
       ctx.restore(); // 이전 상태로 복원
@@ -45,7 +54,7 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
       if (total.length <= 1) {
         const totalDegrees = 360;
         const angleIncrement = totalDegrees / total.length;
-        const startAngle = currentAngle;
+        const startAngle = currentAngleRef.current;
         const endAngle = startAngle + angleIncrement;
 
         // 세그먼트의 텍스트
@@ -65,7 +74,7 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
       total.forEach((segment, index) => {
         const totalDegrees = 360;
         const angleIncrement = totalDegrees / total.length;
-        const startAngle = angleIncrement * index + currentAngle;
+        const startAngle = angleIncrement * index + currentAngleRef.current;
         const endAngle = startAngle + angleIncrement;
         const startRadians = ((startAngle - 90) * Math.PI) / 180;
         const endRadians = ((endAngle - 90) * Math.PI) / 180;
@@ -107,7 +116,7 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
         const progress = Math.min(1, elapsedTime / spinTime);
         const eased = 1 - Math.pow(1 - progress, 3);
 
-        currentAngle = finalAngle * eased;
+        currentAngleRef.current = finalAngle * eased;
         drawRoulette();
 
         if (progress < 1) {
@@ -117,6 +126,7 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
 
         ctx?.clearRect(0, 0, canvas.width, canvas.height);
         drawRoulette();
+        setIsSpinning(false);
       }
 
       animate();
@@ -151,6 +161,27 @@ const Loading = ({ handleStep, resultIndex }: LoadingProps) => {
           height="232"
           style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }}
         ></canvas>
+      </div>
+      <div className="mt-8 text-center">
+        {isSpinning ? (
+          <UniqueText Tag="p" font="uhbee" size="sm">
+            결과를 확인하는 중...
+          </UniqueText>
+        ) : (
+          <>
+            <UniqueText Tag="p" font="uhbee" size="sm">
+              당첨: <span className="text-[var(--chocolate)]">{resultText || '항목 없음'}</span>
+            </UniqueText>
+            <MainButton
+              className="mt-6 mb-10"
+              variant="contained"
+              color="chocolate"
+              onClick={() => handleStep('prev')}
+            >
+              다시 돌리기
+            </MainButton>
+          </>
+        )}
       </div>
     </Fragment>
   );

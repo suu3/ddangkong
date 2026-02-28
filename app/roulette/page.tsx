@@ -33,6 +33,7 @@ export default function Coffee() {
 
   const [step, Container, handleStep] = useStep(0);
   const [orderState, orderDispatch] = useReducer(rouletteReducer, initialRouletteState);
+  const [localResultIndex, setLocalResultIndex] = React.useState<number | null>(null);
   const [realtimeState, setRealtimeState] = React.useState<RouletteGameState>({
     step: 0,
     orderState: initialRouletteState,
@@ -61,6 +62,7 @@ export default function Coffee() {
       return;
     }
 
+    setLocalResultIndex(null);
     orderDispatch({ type, payload });
   };
 
@@ -77,6 +79,9 @@ export default function Coffee() {
       return;
     }
 
+    if (type === 'prev') {
+      setLocalResultIndex(null);
+    }
     handleStep(type);
   };
 
@@ -139,6 +144,14 @@ export default function Coffee() {
     });
   }, [currentOrderState, currentStep, isHost, isRealtimeEnabled, realtimeState.resultIndex]);
 
+  useEffect(() => {
+    if (isRealtimeEnabled) return;
+    if (currentStep !== 2 || localResultIndex !== null) return;
+    if (currentOrderState.total.length === 0) return;
+
+    setLocalResultIndex(Math.floor(Math.random() * currentOrderState.total.length));
+  }, [currentOrderState.total.length, currentStep, isRealtimeEnabled, localResultIndex]);
+
   return (
     <div className="relative">
       <RoomSharePanel
@@ -158,7 +171,10 @@ export default function Coffee() {
         <Container curStep={currentStep}>
           <Start handleStep={handleStepWithSync} />
           <Order handleStep={handleStepWithSync} />
-          <Loading handleStep={handleStepWithSync} resultIndex={isRealtimeEnabled ? realtimeState.resultIndex : null} />
+          <Loading
+            handleStep={handleStepWithSync}
+            resultIndex={isRealtimeEnabled ? realtimeState.resultIndex : localResultIndex}
+          />
         </Container>
       </RouletteContext.Provider>
     </div>
