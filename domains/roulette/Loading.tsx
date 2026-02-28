@@ -5,14 +5,16 @@ import { Fragment, useContext, useEffect, useRef } from 'react';
 import { RouletteContext } from '@/lib/context/roulette';
 import clsx from 'clsx';
 import Image from 'next/image';
+import { RouletteSpinPlan } from '@/lib/realtime/types';
 import mainImage from '@/public/roulette/empty-roulette.svg';
 import pinImage from '@/public/roulette/pin.svg';
 
 interface LoadingProps {
   handleStep: (type: 'next' | 'prev') => void;
+  spinPlan?: RouletteSpinPlan;
 }
 
-const Loading = ({ handleStep }: LoadingProps) => {
+const Loading = ({ handleStep, spinPlan }: LoadingProps) => {
   const { orderState } = useContext(RouletteContext);
   const { angle, total } = orderState;
   let currentAngle = 0; // 현재 각도
@@ -91,10 +93,10 @@ const Loading = ({ handleStep }: LoadingProps) => {
     }
 
     function spinRoulette() {
-      let speed = Math.random() * 20 + 5; // 초기 속도를 랜덤하게 설정 (5 ~ 25 사이의 값)
-      const spinTime = 5000; // 회전 시간 (ms)
+      let speed = spinPlan?.initialSpeed ?? Math.random() * 20 + 5; // 초기 속도를 랜덤하게 설정 (5 ~ 25 사이의 값)
+      const spinTime = spinPlan?.spinTime ?? 5000; // 회전 시간 (ms)
       const startTime = Date.now(); // 시작 시간
-      const deceleration = Math.random() * 0.01 + 0.98; // 감속 비율을 랜덤하게 설정 (0.98 ~ 0.99 사이의 값)
+      const deceleration = spinPlan?.deceleration ?? Math.random() * 0.01 + 0.98; // 감속 비율을 랜덤하게 설정 (0.98 ~ 0.99 사이의 값)
 
       function animate() {
         const currentTime = Date.now();
@@ -112,7 +114,7 @@ const Loading = ({ handleStep }: LoadingProps) => {
       }
       animate();
     }
-  }, []);
+  }, [spinPlan]);
 
   return (
     <Fragment>
