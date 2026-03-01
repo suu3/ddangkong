@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import MainButton from '@/components/button/MainButton';
@@ -108,7 +108,7 @@ export default function RoomSharePanel({
               참여
             </button>
             <button type="button" onClick={() => setIsJoinOpen(false)} className="px-2 py-2 text-xs text-gray-400">
-              ✕
+              닫기
             </button>
           </form>
         ) : (
@@ -126,17 +126,17 @@ export default function RoomSharePanel({
   return (
     <div
       className={clsx(
-        'fixed top-4 right-4 z-[100] bg-white/95 backdrop-blur-sm border border-chocolate/20 rounded-2xl shadow-xl transition-all duration-300',
-        isCollapsed ? 'w-12 h-12' : 'w-64 p-4'
+        'fixed bottom-4 right-4 z-[1001] origin-bottom-right overflow-hidden bg-white/95 backdrop-blur-sm border border-chocolate/20 rounded-2xl shadow-xl transition-[width,height,padding] duration-300 ease-out',
+        isCollapsed ? 'w-[76px] h-11 px-2 py-1.5' : 'w-64 p-4'
       )}
     >
       {isCollapsed ? (
         <button
           onClick={() => setIsCollapsed(false)}
-          className="w-full h-full flex items-center justify-center text-xl hover:bg-chocolate/5 transition-colors"
+          className="w-full h-full flex items-center justify-center text-[11px] font-semibold text-chocolate hover:bg-chocolate/5 rounded-lg transition-colors"
           title="방 정보 펼치기"
         >
-          📡
+          방 정보
         </button>
       ) : (
         <div className="text-xs relative">
@@ -144,7 +144,7 @@ export default function RoomSharePanel({
             onClick={() => setIsCollapsed(true)}
             className="absolute -top-1 -right-1 p-2 text-gray-400 hover:text-chocolate transition-colors"
           >
-            ✕
+            닫기
           </button>
 
           <div className="flex justify-between items-start mb-3 pr-6">
@@ -165,7 +165,7 @@ export default function RoomSharePanel({
             <p className="flex justify-between">
               <span>접속 인원:</span>
               <span className="font-bold text-orange-600">
-                {presenceCount} {maxCapacity ? `/ ${maxCapacity}` : ''} 명
+                {presenceCount} {maxCapacity ? `/ ${maxCapacity}` : ''}명
               </span>
             </p>
           </div>
@@ -184,7 +184,7 @@ export default function RoomSharePanel({
           </div>
 
           <MainButton variant="outlined" color="chocolate" onClick={handleCopy}>
-            {copied ? '링크 복사됨!' : '방 링크 공유'}
+            {copied ? '링크 복사됨' : '방 링크 공유'}
           </MainButton>
         </div>
       )}
