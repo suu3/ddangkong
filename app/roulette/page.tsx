@@ -215,6 +215,7 @@ export default function Coffee() {
         roomId={roomId}
         localActor={clientActor}
         hasConfig={hasSupabaseConfig()}
+        preferFloatingEntry
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
         roomName={roomInfo.name}

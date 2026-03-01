@@ -11,6 +11,7 @@ interface RoomSharePanelProps {
   roomId: string | null;
   localActor: string;
   hasConfig: boolean;
+  preferFloatingEntry?: boolean;
   lastActor?: string | null;
   roomName?: string | null;
   maxCapacity?: number | null;
@@ -22,6 +23,7 @@ export default function RoomSharePanel({
   roomId,
   localActor,
   hasConfig,
+  preferFloatingEntry = false,
   onCreateRoom,
   lastActor,
   roomName,
@@ -89,6 +91,75 @@ export default function RoomSharePanel({
   if (!hasConfig) return null;
 
   if (!roomId) {
+    if (preferFloatingEntry) {
+      return (
+        <div
+          className={clsx(
+            'fixed bottom-4 right-4 z-[1001] origin-bottom-right overflow-hidden bg-white/95 backdrop-blur-sm border border-chocolate/20 rounded-2xl shadow-xl transition-[width,height,padding] duration-300 ease-out',
+            isCollapsed ? 'w-[76px] h-11 px-2 py-1.5' : 'w-64 p-4'
+          )}
+        >
+          {isCollapsed ? (
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="w-full h-full flex items-center justify-center text-[11px] font-semibold text-chocolate hover:bg-chocolate/5 rounded-lg transition-colors"
+              title="방 정보 펼치기"
+            >
+              방 정보
+            </button>
+          ) : (
+            <div className="text-xs relative">
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="absolute -top-1 -right-1 p-2 text-gray-400 hover:text-chocolate transition-colors"
+              >
+                닫기
+              </button>
+
+              <div className="pr-10 mb-3">
+                <p className="font-bold text-sm text-chocolate">
+                  {gameType === 'coffee' ? '커피내기' : '룰렛'} 실시간 공유
+                </p>
+              </div>
+
+              <MainButton className="mb-3" variant="outlined" color="chocolate" onClick={onCreateRoom}>
+                방 만들기
+              </MainButton>
+
+              {isJoinOpen ? (
+                <form onSubmit={handleJoin} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={inputRoomId}
+                    onChange={e => setInputRoomId(e.target.value)}
+                    placeholder="방 ID 입력"
+                    className="flex-1 px-3 py-2 text-xs border border-chocolate/30 rounded-lg outline-none focus:border-chocolate"
+                  />
+                  <button type="submit" className="px-3 py-2 text-xs bg-chocolate text-white rounded-lg">
+                    참여
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsJoinOpen(false)}
+                    className="px-2 py-2 text-xs text-gray-400"
+                  >
+                    닫기
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setIsJoinOpen(true)}
+                  className="text-[10px] text-chocolate/60 underline underline-offset-2 hover:text-chocolate"
+                >
+                  기존 방 ID로 참여하기
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px] m-auto">
         <MainButton variant="outlined" color="chocolate" onClick={onCreateRoom}>
