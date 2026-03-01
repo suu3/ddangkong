@@ -19,6 +19,6 @@
 - TOC 화면이 포함된 파일 경로 또는 해당 기능 브랜치 정보를 공유해주세요.
 - `.env`에 Supabase 환경변수 설정
   - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - 실제 기기 2대 이상으로 룰렛 room 링크 공유 후 결과 일치 여부 확인
 - 운영 환경에서 오래된 room 데이터 정리 정책(만료/삭제) 적용 여부 검토

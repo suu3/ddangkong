@@ -5,7 +5,7 @@ const config = getSupabaseConfig();
 
 if (!config) {
   throw new Error(
-    'Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) are missing.'
+    'Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) are missing.'
   );
 }
 

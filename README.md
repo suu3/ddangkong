@@ -19,5 +19,5 @@
 ### 실시간 공유 테스트(선택)
 - `.env`에 Supabase 설정
   - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `/roulette` 또는 `/coffee`에서 `방 만들기` 후 링크를 공유하면 Host/Viewer 동기화 가능
