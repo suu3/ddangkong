@@ -12,9 +12,10 @@ import MainButton from '@/components/button/MainButton';
 interface LoadingProps {
   handleStep: (type: 'next' | 'prev') => void;
   resultIndex: number | null;
+  onReplay?: () => void;
 }
 
-const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
+const Loading = ({ handleStep: _handleStep, resultIndex, onReplay }: LoadingProps) => {
   const { orderState } = useContext(RouletteContext);
   const { total } = orderState;
   const currentAngleRef = useRef(0);
@@ -170,7 +171,15 @@ const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
               className="mt-6 mb-10"
               variant="contained"
               color="chocolate"
-              onClick={() => _handleStep('prev')}
+              disabled={total.length === 0}
+              onClick={() => {
+                if (total.length === 0) return;
+                if (onReplay) {
+                  onReplay();
+                  return;
+                }
+                _handleStep('prev');
+              }}
             >
               다시 돌리기
             </MainButton>

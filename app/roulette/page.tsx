@@ -25,6 +25,8 @@ interface RouletteGameState {
   lastActor: string | null;
 }
 
+type RealtimeDraftState = Omit<RouletteGameState, 'revision' | 'lastActor'>;
+
 export default function Coffee() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,6 +45,13 @@ export default function Coffee() {
     revision: 0,
     lastActor: null,
   });
+  const realtimeStateRef = React.useRef<RouletteGameState>({
+    step: 0,
+    orderState: initialRouletteState,
+    resultIndex: null,
+    revision: 0,
+    lastActor: null,
+  });
   const [roomInfo, setRoomInfo] = React.useState<{ name: string | null; maxCapacity: number | null }>({
     name: null,
     maxCapacity: null,
@@ -52,52 +61,89 @@ export default function Coffee() {
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
 
+  const applyRealtimeState = useCallback((nextState: RouletteGameState) => {
+    realtimeStateRef.current = nextState;
+    setRealtimeState(nextState);
+  }, []);
+
   const pushRealtimeState = useCallback(
-    async (nextState: Omit<RouletteGameState, 'revision' | 'lastActor'>) => {
+    async (makeNextState: (currentState: RouletteGameState) => RealtimeDraftState) => {
       if (!roomId) return;
 
-      const previousState = realtimeState;
+      const previousState = realtimeStateRef.current;
       const optimisticState: RouletteGameState = {
-        ...nextState,
+        ...makeNextState(previousState),
         revision: previousState.revision + 1,
         lastActor: clientActor,
       };
 
-      // 1. 로컬 상태 즉시 업데이트
-      setRealtimeState(optimisticState);
-
-      // 2. 다른 참여자에게 Broadcast 즉시 전송
+      applyRealtimeState(optimisticState);
       sendStateRef.current?.(optimisticState);
 
-      // 3. DB 비동기 업데이트
       try {
         await updateRoomState(roomId, optimisticState, previousState.revision);
       } catch (error) {
         if (error instanceof Error && error.message.includes('Realtime conflict')) {
           const latest = await getRoom<RouletteGameState>(roomId);
-          if (latest) {
-            setRealtimeState(latest.game_state);
-          } else {
-            setRealtimeState(previousState);
+          if (!latest) {
+            applyRealtimeState(previousState);
+            return;
           }
+
+          const latestState = latest.game_state;
+          applyRealtimeState(latestState);
+
+          const retriedState: RouletteGameState = {
+            ...makeNextState(latestState),
+            revision: latestState.revision + 1,
+            lastActor: clientActor,
+          };
+
+          applyRealtimeState(retriedState);
+          sendStateRef.current?.(retriedState);
+
+          try {
+            await updateRoomState(roomId, retriedState, latestState.revision);
+          } catch (retryError) {
+            applyRealtimeState(latestState);
+            console.error('Failed to retry realtime state update', retryError);
+            return;
+          }
+
           return;
         }
 
-        setRealtimeState(previousState);
-        throw error;
+        applyRealtimeState(previousState);
+        console.error('Failed to update realtime state', error);
+        return;
       }
     },
-    [clientActor, realtimeState, roomId]
+    [applyRealtimeState, clientActor, roomId]
   );
 
   const handleOrder = ({ type, payload }: RouletteAction) => {
     if (isRealtimeEnabled) {
+      if (type === 'ADD_ITEM') {
+        const appendedItem = payload[payload.length - 1];
+        if (!appendedItem) return;
+
+        void pushRealtimeState(currentState => ({
+          step: currentState.step,
+          orderState: {
+            ...currentState.orderState,
+            total: [...currentState.orderState.total, appendedItem],
+          },
+          resultIndex: null,
+        }));
+        return;
+      }
+
       const nextOrderState = rouletteReducer(currentOrderState, { type, payload });
-      void pushRealtimeState({
-        step: currentStep,
+      void pushRealtimeState(currentState => ({
+        step: currentState.step,
         orderState: nextOrderState,
         resultIndex: null,
-      });
+      }));
       return;
     }
 
@@ -107,12 +153,11 @@ export default function Coffee() {
 
   const handleStepWithSync = (type: 'next' | 'prev') => {
     if (isRealtimeEnabled) {
-      const nextStep = type === 'next' ? currentStep + 1 : Math.max(0, currentStep - 1);
-      void pushRealtimeState({
-        step: nextStep,
-        orderState: currentOrderState,
-        resultIndex: type === 'prev' ? null : realtimeState.resultIndex,
-      });
+      void pushRealtimeState(currentState => ({
+        step: type === 'next' ? currentState.step + 1 : Math.max(0, currentState.step - 1),
+        orderState: currentState.orderState,
+        resultIndex: type === 'prev' ? null : currentState.resultIndex,
+      }));
       return;
     }
 
@@ -120,6 +165,21 @@ export default function Coffee() {
       setLocalResultIndex(null);
     }
     handleStep(type);
+  };
+
+  const handleReplay = () => {
+    if (isRealtimeEnabled) {
+      void pushRealtimeState(() => ({
+        step: 1,
+        orderState: initialRouletteState,
+        resultIndex: null,
+      }));
+      return;
+    }
+
+    setLocalResultIndex(null);
+    orderDispatch({ type: 'ADD_ITEM', payload: [] });
+    handleStep('prev');
   };
 
   const renderPrevBtn = currentStep !== 0 && (
@@ -166,7 +226,7 @@ export default function Coffee() {
 
     getRoom<RouletteGameState>(roomId).then(room => {
       if (!mounted || !room) return;
-      setRealtimeState(room.game_state);
+      applyRealtimeState(room.game_state);
       setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
 
@@ -174,7 +234,7 @@ export default function Coffee() {
       roomId,
       onState: state => {
         if (!mounted) return;
-        setRealtimeState(state);
+        applyRealtimeState(state);
       },
     });
 
@@ -185,20 +245,19 @@ export default function Coffee() {
       unsubscribe();
       sendStateRef.current = null;
     };
-  }, [roomId]);
+  }, [applyRealtimeState, roomId]);
 
   useEffect(() => {
     if (!isRealtimeEnabled) return;
     if (currentStep !== 2 || realtimeState.resultIndex !== null) return;
     if (currentOrderState.total.length === 0) return;
 
-    const resultIndex = Math.floor(Math.random() * currentOrderState.total.length);
-    void pushRealtimeState({
-      step: currentStep,
-      orderState: currentOrderState,
-      resultIndex,
-    });
-  }, [currentOrderState, currentStep, isRealtimeEnabled, pushRealtimeState, realtimeState.resultIndex]);
+    void pushRealtimeState(currentState => ({
+      step: currentState.step,
+      orderState: currentState.orderState,
+      resultIndex: Math.floor(Math.random() * currentState.orderState.total.length),
+    }));
+  }, [currentOrderState.total.length, currentStep, isRealtimeEnabled, pushRealtimeState, realtimeState.resultIndex]);
 
   useEffect(() => {
     if (isRealtimeEnabled) return;
@@ -233,6 +292,7 @@ export default function Coffee() {
           <Order handleStep={handleStepWithSync} />
           <Loading
             handleStep={handleStepWithSync}
+            onReplay={handleReplay}
             resultIndex={isRealtimeEnabled ? realtimeState.resultIndex : localResultIndex}
           />
         </Container>
