@@ -9,11 +9,12 @@ interface LotteryProps {
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
+  onClick?: () => void;
   activeSelectors?: Array<{ id: string; name: string }>;
 }
 
 const Lottery = forwardRef<HTMLDivElement, LotteryProps>(
-  ({ children, className = '', style = {}, activeSelectors = [] }, ref) => {
+  ({ children, className = '', style = {}, onClick, activeSelectors = [] }, ref) => {
     // 간단한 해시로 색상 생성
     const getSelectorColor = (id: string) => {
       const colors = ['#E91E63', '#9C27B0', '#2196F3', '#00BCD4', '#4CAF50', '#FFC107', '#FF5722'];
@@ -23,7 +24,7 @@ const Lottery = forwardRef<HTMLDivElement, LotteryProps>(
     };
 
     return (
-      <div className={clsx(styles['wrapper'], className)} style={style} ref={ref}>
+      <div className={clsx(styles['wrapper'], className)} style={style} ref={ref} onClick={onClick}>
         <Image priority src={noteImage} fill sizes="100%" alt="제비" />
         {activeSelectors.map(selector => (
           <div

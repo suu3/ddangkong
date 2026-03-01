@@ -19,6 +19,7 @@ import { BGM_URL } from '@/lib/constants/coffee';
 import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
+import { supabase } from '@/lib/supabase/client';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { getLottery } from '@/lib/utils/random';
 import { getServerActor } from '@/lib/realtime/clientActor';

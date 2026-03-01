@@ -170,7 +170,7 @@ const Loading = ({ handleStep: _handleStep, resultIndex }: LoadingProps) => {
               className="mt-6 mb-10"
               variant="contained"
               color="chocolate"
-              onClick={() => handleStep('prev')}
+              onClick={() => _handleStep('prev')}
             >
               다시 돌리기
             </MainButton>
