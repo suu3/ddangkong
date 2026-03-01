@@ -197,7 +197,7 @@ export default function Coffee() {
     getRoom<CoffeeGameState>(roomId).then(room => {
       if (!mounted || !room) return;
       setRealtimeState(room.game_state);
-      setRoomInfo({ title: room.title, maxPlayers: room.max_players });
+      setRoomInfo({ title: room.title, maxPlayers: room.max_players ?? null });
     });
 
     const { unsubscribe, sendState } = subscribeRoomState<CoffeeGameState>({

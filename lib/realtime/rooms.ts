@@ -5,7 +5,7 @@ interface RoomRow<T> {
   status: string;
   game_type: string;
   title: string | null;
-  max_players: number | null;
+  max_players?: number | null;
   game_state: T;
   created_at: string;
 }
@@ -13,6 +13,16 @@ interface RoomRow<T> {
 interface RealtimeStateWithRevision {
   revision?: number;
 }
+
+const isMissingColumnError = (message: string | undefined, code: string | undefined, column: string) => {
+  if (!message) return false;
+  return (
+    code === 'PGRST204' ||
+    code === '42703' ||
+    message.includes(`'${column}'`) ||
+    message.toLowerCase().includes('column')
+  );
+};
 
 export const createRoom = async <T>(
   gameType: 'coffee' | 'roulette',
@@ -27,7 +37,7 @@ export const createRoom = async <T>(
     game_state: gameState,
   };
 
-  // 컬럼 존재 여부를 미리 알 수 없으므로, 일단 포함해서 시도
+  // max_players가 없는 스키마도 있으므로 우선 포함 시도 후 실패하면 자동 폴백
   const { data, error } = await supabase
     .from('rooms')
     .insert([
@@ -41,8 +51,7 @@ export const createRoom = async <T>(
     .single();
 
   if (error) {
-    // 만약 컬럼이 없어서 에러가 난 경우(PGRST204 등), 기본 필드만으로 재시도
-    if (error.message.includes('column') || error.code === 'PGRST204') {
+    if (isMissingColumnError(error.message, error.code, 'max_players')) {
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('rooms')
         .insert([basePayload])
@@ -59,14 +68,28 @@ export const createRoom = async <T>(
 };
 
 export const getRoom = async <T>(roomId: string) => {
-  // getRoom에서도 존재하지 않을 수 있는 컬럼은 에러가 날 수 있으므로 주의
   const { data, error } = await supabase
     .from('rooms')
-    .select('*') // 모든 컬럼 조회 (없으면 무시됨)
+    .select('id,status,game_type,title,max_players,game_state,created_at')
     .eq('id', roomId)
     .single();
 
   if (error) {
+    if (isMissingColumnError(error.message, error.code, 'max_players')) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('rooms')
+        .select('id,status,game_type,title,game_state,created_at')
+        .eq('id', roomId)
+        .single();
+
+      if (fallbackError) {
+        if (fallbackError.code === 'PGRST116') return null;
+        throw new Error(`Failed to fetch room: ${fallbackError.message}`);
+      }
+
+      return { ...(fallbackData as RoomRow<T>), max_players: null };
+    }
+
     if (error.code === 'PGRST116') return null; // Not found
     throw new Error(`Failed to fetch room: ${error.message}`);
   }
