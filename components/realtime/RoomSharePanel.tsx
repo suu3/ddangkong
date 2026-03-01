@@ -30,6 +30,8 @@ export default function RoomSharePanel({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [copied, setCopied] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
+  const [inputRoomId, setInputRoomId] = useState('');
+  const [isJoinOpen, setIsJoinOpen] = useState(false);
   const router = useRouter();
 
   const shareUrl = useMemo(() => {
@@ -52,6 +54,16 @@ export default function RoomSharePanel({
       current.searchParams.delete('roomId');
       router.push(current.pathname);
     }
+  };
+
+  const handleJoin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputRoomId.trim()) return;
+    const current = new URL(window.location.href);
+    current.searchParams.set('roomId', inputRoomId.trim());
+    router.push(current.toString());
+    setIsJoinOpen(false);
+    setInputRoomId('');
   };
 
   useEffect(() => {
@@ -78,10 +90,35 @@ export default function RoomSharePanel({
 
   if (!roomId) {
     return (
-      <div className="px-4 pt-4 relative z-[100]">
+      <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px]">
         <MainButton variant="outlined" color="chocolate" onClick={onCreateRoom}>
           {gameType === 'coffee' ? '커피내기 실시간 공유' : '룰렛 실시간 공유'}
         </MainButton>
+
+        {isJoinOpen ? (
+          <form onSubmit={handleJoin} className="flex gap-2">
+            <input
+              type="text"
+              value={inputRoomId}
+              onChange={e => setInputRoomId(e.target.value)}
+              placeholder="방 ID 입력"
+              className="flex-1 px-3 py-2 text-xs border border-chocolate/30 rounded-lg outline-none focus:border-chocolate"
+            />
+            <button type="submit" className="px-3 py-2 text-xs bg-chocolate text-white rounded-lg">
+              참여
+            </button>
+            <button type="button" onClick={() => setIsJoinOpen(false)} className="px-2 py-2 text-xs text-gray-400">
+              ✕
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setIsJoinOpen(true)}
+            className="text-[10px] text-chocolate/60 underline underline-offset-2 hover:text-chocolate"
+          >
+            기존 방 ID로 참여하기
+          </button>
+        )}
       </div>
     );
   }
@@ -120,7 +157,7 @@ export default function RoomSharePanel({
             </button>
           </div>
 
-          <div className="space-y-1 mb-4 text-gray-600">
+          <div className="space-y-1 mb-4 text-gray-600 border-b border-gray-100 pb-3">
             <p className="flex justify-between">
               <span>최근 조작:</span>
               <span className="font-medium text-gray-900">{lastActor?.slice(0, 10) ?? '-'}</span>
@@ -130,6 +167,19 @@ export default function RoomSharePanel({
               <span className="font-bold text-orange-600">
                 {presenceCount} {maxPlayers ? `/ ${maxPlayers}` : ''} 명
               </span>
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-[9px] text-gray-400 mb-1">방 ID (클릭하여 복사):</p>
+            <p
+              className="text-[9px] text-gray-500 break-all bg-gray-50 p-1 rounded cursor-pointer hover:bg-gray-100"
+              onClick={() => {
+                void navigator.clipboard.writeText(roomId);
+                alert('방 ID가 복사되었습니다.');
+              }}
+            >
+              {roomId}
             </p>
           </div>
 

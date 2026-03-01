@@ -134,14 +134,6 @@ export default function Coffee() {
   );
 
   const handleCreateRoom = async () => {
-    const title = prompt('방 이름을 입력해주세요 (공백 시 기본값)', '룰렛 한판!');
-    if (title === null) return;
-
-    const maxPlayersStr = prompt('최대 인원수를 설정해주세요 (기본 10)', '10');
-    if (maxPlayersStr === null) return;
-
-    const maxPlayers = parseInt(maxPlayersStr, 10) || 10;
-
     const state: RouletteGameState = {
       step: 0,
       orderState: initialRouletteState,
@@ -150,7 +142,7 @@ export default function Coffee() {
       lastActor: clientActor,
     };
 
-    const room = await createRoom('roulette', state, { title, maxPlayers });
+    const room = await createRoom('roulette', state);
     router.push(`/roulette?roomId=${room.id}`);
   };
 
