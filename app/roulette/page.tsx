@@ -43,39 +43,52 @@ export default function Coffee() {
     revision: 0,
     lastActor: null,
   });
+  const [roomInfo, setRoomInfo] = React.useState<{ title: string | null; maxPlayers: number | null }>({
+    title: null,
+    maxPlayers: null,
+  });
+  const sendStateRef = React.useRef<((state: RouletteGameState) => void) | null>(null);
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
 
-  const pushRealtimeState = useCallback(async (nextState: Omit<RouletteGameState, 'revision' | 'lastActor'>) => {
-    if (!roomId) return;
+  const pushRealtimeState = useCallback(
+    async (nextState: Omit<RouletteGameState, 'revision' | 'lastActor'>) => {
+      if (!roomId) return;
 
-    const previousState = realtimeState;
-    const optimisticState: RouletteGameState = {
-      ...nextState,
-      revision: previousState.revision + 1,
-      lastActor: clientActor,
-    };
+      const previousState = realtimeState;
+      const optimisticState: RouletteGameState = {
+        ...nextState,
+        revision: previousState.revision + 1,
+        lastActor: clientActor,
+      };
 
-    setRealtimeState(optimisticState);
+      // 1. 로컬 상태 즉시 업데이트
+      setRealtimeState(optimisticState);
 
-    try {
-      await updateRoomState(roomId, optimisticState, previousState.revision);
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('Realtime conflict')) {
-        const latest = await getRoom<RouletteGameState>(roomId);
-        if (latest) {
-          setRealtimeState(latest.game_state);
-        } else {
-          setRealtimeState(previousState);
+      // 2. 다른 참여자에게 Broadcast 즉시 전송
+      sendStateRef.current?.(optimisticState);
+
+      // 3. DB 비동기 업데이트
+      try {
+        await updateRoomState(roomId, optimisticState, previousState.revision);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Realtime conflict')) {
+          const latest = await getRoom<RouletteGameState>(roomId);
+          if (latest) {
+            setRealtimeState(latest.game_state);
+          } else {
+            setRealtimeState(previousState);
+          }
+          return;
         }
-        return;
-      }
 
-      setRealtimeState(previousState);
-      throw error;
-    }
-  }, [clientActor, realtimeState, roomId]);
+        setRealtimeState(previousState);
+        throw error;
+      }
+    },
+    [clientActor, realtimeState, roomId]
+  );
 
   const handleOrder = ({ type, payload }: RouletteAction) => {
     if (isRealtimeEnabled) {
@@ -121,6 +134,14 @@ export default function Coffee() {
   );
 
   const handleCreateRoom = async () => {
+    const title = prompt('방 이름을 입력해주세요 (공백 시 기본값)', '룰렛 한판!');
+    if (title === null) return;
+
+    const maxPlayersStr = prompt('최대 인원수를 설정해주세요 (기본 10)', '10');
+    if (maxPlayersStr === null) return;
+
+    const maxPlayers = parseInt(maxPlayersStr, 10) || 10;
+
     const state: RouletteGameState = {
       step: 0,
       orderState: initialRouletteState,
@@ -129,10 +150,9 @@ export default function Coffee() {
       lastActor: clientActor,
     };
 
-    const room = await createRoom('roulette', state);
+    const room = await createRoom('roulette', state, { title, maxPlayers });
     router.push(`/roulette?roomId=${room.id}`);
   };
-
 
   useEffect(() => {
     let mounted = true;
@@ -155,9 +175,10 @@ export default function Coffee() {
     getRoom<RouletteGameState>(roomId).then(room => {
       if (!mounted || !room) return;
       setRealtimeState(room.game_state);
+      setRoomInfo({ title: room.title, maxPlayers: room.max_players });
     });
 
-    const unsubscribe = subscribeRoomState<RouletteGameState>({
+    const { unsubscribe, sendState } = subscribeRoomState<RouletteGameState>({
       roomId,
       onState: state => {
         if (!mounted) return;
@@ -165,9 +186,12 @@ export default function Coffee() {
       },
     });
 
+    sendStateRef.current = sendState;
+
     return () => {
       mounted = false;
       unsubscribe();
+      sendStateRef.current = null;
     };
   }, [roomId]);
 
@@ -201,6 +225,8 @@ export default function Coffee() {
         hasConfig={hasSupabaseConfig()}
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
+        roomTitle={roomInfo.title}
+        maxPlayers={roomInfo.maxPlayers}
       />
       {renderPrevBtn}
       <RouletteContext.Provider

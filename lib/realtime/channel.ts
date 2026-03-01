@@ -1,4 +1,4 @@
-import { getSupabaseConfig } from '@/lib/supabase/env';
+import { supabase } from '@/lib/supabase/client';
 
 type Unsubscribe = () => void;
 
@@ -8,86 +8,54 @@ interface SubscribeOptions<T> {
   onError?: (message: string) => void;
 }
 
-export const subscribeRoomState = <T>({ roomId, onState, onError }: SubscribeOptions<T>): Unsubscribe => {
-  const config = getSupabaseConfig();
+export const subscribeRoomState = <T>({
+  roomId,
+  onState,
+  onError,
+}: SubscribeOptions<T>): { unsubscribe: Unsubscribe; sendState: (state: T) => void } => {
+  const channel = supabase
+    .channel(`room:${roomId}`, {
+      config: {
+        broadcast: { self: true }, // 내가 보낸 메시지도 내가 받아서 상태 업데이트
+      },
+    })
+    // 1. DB 변경 감지 (백업용)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'rooms',
+        filter: `id=eq.${roomId}`,
+      },
+      payload => {
+        if (payload.new && (payload.new as any).game_state) {
+          onState(payload.new.game_state as T);
+        }
+      }
+    )
+    // 2. Broadcast 감지 (진짜 실시간 - WebRTC 대용)
+    .on('broadcast', { event: 'state_change' }, ({ payload }) => {
+      onState(payload as T);
+    })
+    .subscribe((status, error) => {
+      if (status === 'CHANNEL_ERROR' || error) {
+        onError?.(error?.message || 'Realtime channel error');
+      }
+    });
 
-  if (!config) {
-    onError?.('Supabase environment variables are missing.');
-    return () => {};
-  }
+  const sendState = (state: T) => {
+    void channel.send({
+      type: 'broadcast',
+      event: 'state_change',
+      payload: state,
+    });
+  };
 
-  const url = new URL(config.url);
-  const socketUrl = `wss://${url.host}/realtime/v1/websocket?apikey=${config.publishableKey}&vsn=1.0.0`;
-  const topic = `realtime:public:rooms:id=eq.${roomId}`;
-  const socket = new WebSocket(socketUrl);
-
-  let heartbeatRef = 2;
-  const heartbeatInterval = setInterval(() => {
-    if (socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        topic: 'phoenix',
-        event: 'heartbeat',
-        payload: {},
-        ref: String(heartbeatRef++),
-      })
-    );
-  }, 30000);
-
-  socket.addEventListener('open', () => {
-    socket.send(
-      JSON.stringify({
-        topic,
-        event: 'phx_join',
-        payload: {
-          config: {
-            broadcast: { self: false },
-            presence: { key: '' },
-            postgres_changes: [
-              {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'rooms',
-                filter: `id=eq.${roomId}`,
-              },
-            ],
-          },
-        },
-        ref: '1',
-      })
-    );
-  });
-
-  socket.addEventListener('message', event => {
-    const data = JSON.parse(event.data);
-    if (data?.event === 'postgres_changes' && data?.payload?.data?.record?.game_state) {
-      onState(data.payload.data.record.game_state as T);
-    }
-
-    if (data?.event === 'phx_error') {
-      onError?.('Realtime channel error');
-    }
-  });
-
-  socket.addEventListener('error', () => {
-    onError?.('Failed to connect realtime channel');
-  });
-
-  return () => {
-    clearInterval(heartbeatInterval);
-
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(
-        JSON.stringify({
-          topic,
-          event: 'phx_leave',
-          payload: {},
-          ref: String(heartbeatRef++),
-        })
-      );
-    }
-
-    socket.close();
+  return {
+    unsubscribe: () => {
+      void supabase.removeChannel(channel);
+    },
+    sendState,
   };
 };

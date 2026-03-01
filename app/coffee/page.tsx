@@ -29,6 +29,7 @@ interface CoffeeGameState {
   result: string | null;
   revision: number;
   lastActor: string | null;
+  selections: Record<string, number | null>; // actorId -> cardIndex
 }
 
 export default function Coffee() {
@@ -48,42 +49,70 @@ export default function Coffee() {
     result: null,
     revision: 0,
     lastActor: null,
+    selections: {},
   });
+  const [roomInfo, setRoomInfo] = React.useState<{ title: string | null; maxPlayers: number | null }>({
+    title: null,
+    maxPlayers: null,
+  });
+  const [activeSelections, setActiveSelections] = React.useState<
+    Record<string, { actor: string; cardIndex: number | null }>
+  >({});
+
   const { playerRef, playSound } = usePlayAudio();
+  const sendStateRef = React.useRef<((state: CoffeeGameState) => void) | null>(null);
+  const presenceChannelRef = React.useRef<any>(null);
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
   const isMainStep = currentStep === 0;
 
-  const pushRealtimeState = useCallback(async (nextState: Omit<CoffeeGameState, 'revision' | 'lastActor'>) => {
-    if (!roomId) return;
+  const pushRealtimeState = useCallback(
+    async (nextState: Omit<CoffeeGameState, 'revision' | 'lastActor' | 'selections'>) => {
+      if (!roomId) return;
 
-    const previousState = realtimeState;
-    const optimisticState: CoffeeGameState = {
-      ...nextState,
-      revision: previousState.revision + 1,
-      lastActor: clientActor,
-    };
+      const previousState = realtimeState;
+      const optimisticState: CoffeeGameState = {
+        ...nextState,
+        selections: previousState.selections,
+        revision: previousState.revision + 1,
+        lastActor: clientActor,
+      };
 
-    setRealtimeState(optimisticState);
+      setRealtimeState(optimisticState);
+      sendStateRef.current?.(optimisticState);
 
-    try {
-      await updateRoomState(roomId, optimisticState, previousState.revision);
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('Realtime conflict')) {
-        const latest = await getRoom<CoffeeGameState>(roomId);
-        if (latest) {
-          setRealtimeState(latest.game_state);
-        } else {
-          setRealtimeState(previousState);
+      try {
+        await updateRoomState(roomId, optimisticState, previousState.revision);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Realtime conflict')) {
+          const latest = await getRoom<CoffeeGameState>(roomId);
+          if (latest) {
+            setRealtimeState(latest.game_state);
+          } else {
+            setRealtimeState(previousState);
+          }
+          return;
         }
-        return;
+        setRealtimeState(previousState);
+        throw error;
       }
+    },
+    [clientActor, realtimeState, roomId]
+  );
 
-      setRealtimeState(previousState);
-      throw error;
-    }
-  }, [clientActor, realtimeState, roomId]);
+  const handleCardSelect = useCallback(
+    (cardIndex: number | null) => {
+      if (!isRealtimeEnabled || !presenceChannelRef.current) return;
+
+      // Presence로 즉시 전파 (Google Docs 스타일 하이라이트용)
+      void presenceChannelRef.current.track({
+        actor: clientActor,
+        cardIndex: cardIndex,
+      });
+    },
+    [clientActor, isRealtimeEnabled]
+  );
 
   const handleOrder = (type: CoffeeActionType) => {
     if (isRealtimeEnabled) {
@@ -134,6 +163,14 @@ export default function Coffee() {
   );
 
   const handleCreateRoom = async () => {
+    const title = prompt('방 이름을 입력해주세요 (공백 시 기본값)', '커피내기 한판!');
+    if (title === null) return; // 취소
+
+    const maxPlayersStr = prompt('최대 인원수를 설정해주세요 (기본 10)', '10');
+    if (maxPlayersStr === null) return;
+
+    const maxPlayers = parseInt(maxPlayersStr, 10) || 10;
+
     const state: CoffeeGameState = {
       step: 0,
       orderState: initialCoffeeState,
@@ -141,10 +178,9 @@ export default function Coffee() {
       revision: 0,
       lastActor: clientActor,
     };
-    const room = await createRoom('coffee', state);
+    const room = await createRoom('coffee', state, { title, maxPlayers });
     router.push(`/coffee?roomId=${room.id}`);
   };
-
 
   useEffect(() => {
     let mounted = true;
@@ -167,9 +203,10 @@ export default function Coffee() {
     getRoom<CoffeeGameState>(roomId).then(room => {
       if (!mounted || !room) return;
       setRealtimeState(room.game_state);
+      setRoomInfo({ title: room.title, maxPlayers: room.max_players });
     });
 
-    const unsubscribe = subscribeRoomState<CoffeeGameState>({
+    const { unsubscribe, sendState } = subscribeRoomState<CoffeeGameState>({
       roomId,
       onState: state => {
         if (!mounted) return;
@@ -177,9 +214,12 @@ export default function Coffee() {
       },
     });
 
+    sendStateRef.current = sendState;
+
     return () => {
       mounted = false;
       unsubscribe();
+      sendStateRef.current = null;
     };
   }, [roomId]);
 
@@ -207,6 +247,45 @@ export default function Coffee() {
   //   }
   // }, []);
 
+  useEffect(() => {
+    if (!roomId || !isRealtimeEnabled) return;
+
+    let mounted = true;
+
+    const channel = supabase.channel(`presence:${roomId}`);
+    presenceChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        if (!mounted) return;
+        const state = channel.presenceState();
+        const simplified: Record<string, { actor: string; cardIndex: number | null }> = {};
+
+        Object.entries(state).forEach(([key, presences]) => {
+          const first = presences[0] as any;
+          if (first) {
+            simplified[key] = {
+              actor: first.actor,
+              cardIndex: first.cardIndex ?? null,
+            };
+          }
+        });
+
+        setActiveSelections(simplified);
+      })
+      .subscribe(async status => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ actor: clientActor, cardIndex: null });
+        }
+      });
+
+    return () => {
+      mounted = false;
+      void supabase.removeChannel(channel);
+      presenceChannelRef.current = null;
+    };
+  }, [roomId, isRealtimeEnabled, clientActor]);
+
   return (
     <div className="relative">
       <RoomSharePanel
@@ -216,6 +295,8 @@ export default function Coffee() {
         hasConfig={hasSupabaseConfig()}
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
+        roomTitle={roomInfo.title}
+        maxPlayers={roomInfo.maxPlayers}
       />
       {renderPrevBtn}
       <CoffeeContext.Provider
@@ -224,6 +305,9 @@ export default function Coffee() {
           allMuteState,
           handleOrder,
           handleAllMute,
+          activeSelections,
+          handleCardSelect,
+          clientActor,
         }}
       >
         {!isMainStep && <AudioPlayer volume={0.4} ref={playerRef} src={BGM_URL} muted={allMuteState.isAllMuted} />}

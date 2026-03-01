@@ -1,9 +1,11 @@
-import { getSupabaseConfig } from '@/lib/supabase/env';
+import { supabase } from '@/lib/supabase/client';
 
 interface RoomRow<T> {
   id: string;
   status: string;
   game_type: string;
+  title: string | null;
+  max_players: number | null;
   game_state: T;
   created_at: string;
 }
@@ -12,68 +14,47 @@ interface RealtimeStateWithRevision {
   revision?: number;
 }
 
-const getHeaders = () => {
-  const config = getSupabaseConfig();
-
-  if (!config) {
-    throw new Error('Supabase environment variables are missing.');
-  }
-
-  return {
-    apikey: config.publishableKey,
-    Authorization: `Bearer ${config.publishableKey}`,
-    'Content-Type': 'application/json',
-  };
-};
-
-export const createRoom = async <T>(gameType: 'coffee' | 'roulette', gameState: T) => {
-  const config = getSupabaseConfig();
-  if (!config) throw new Error('Supabase environment variables are missing.');
-
+export const createRoom = async <T>(
+  gameType: 'coffee' | 'roulette',
+  gameState: T,
+  options?: { title?: string; maxPlayers?: number }
+) => {
   const id = crypto.randomUUID();
-  const response = await fetch(`${config.url}/rest/v1/rooms`, {
-    method: 'POST',
-    headers: {
-      ...getHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify([
+  const { data, error } = await supabase
+    .from('rooms')
+    .insert([
       {
         id,
         status: 'active',
         game_type: gameType,
+        title: options?.title || `${gameType === 'coffee' ? '커피내기' : '룰렛'} 방`,
+        max_players: options?.maxPlayers || 10,
         game_state: gameState,
       },
-    ]),
-  });
+    ])
+    .select()
+    .single();
 
-  if (!response.ok) {
-    throw new Error(`Failed to create room: ${response.status}`);
+  if (error) {
+    throw new Error(`Failed to create room: ${error.message}`);
   }
 
-  const data = (await response.json()) as RoomRow<T>[];
-  return data[0];
+  return data as RoomRow<T>;
 };
 
 export const getRoom = async <T>(roomId: string) => {
-  const config = getSupabaseConfig();
-  if (!config) throw new Error('Supabase environment variables are missing.');
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('id,status,game_type,game_state,created_at')
+    .eq('id', roomId)
+    .single();
 
-  const response = await fetch(
-    `${config.url}/rest/v1/rooms?id=eq.${roomId}&select=id,status,game_type,game_state,created_at&limit=1`,
-    {
-      method: 'GET',
-      headers: getHeaders(),
-      cache: 'no-store',
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch room: ${response.status}`);
+  if (error) {
+    if (error.code === 'PGRST116') return null; // Not found
+    throw new Error(`Failed to fetch room: ${error.message}`);
   }
 
-  const data = (await response.json()) as RoomRow<T>[];
-  return data[0] ?? null;
+  return data as RoomRow<T>;
 };
 
 export const updateRoomState = async <T extends RealtimeStateWithRevision>(
@@ -81,35 +62,25 @@ export const updateRoomState = async <T extends RealtimeStateWithRevision>(
   gameState: T,
   expectedRevision?: number
 ) => {
-  const config = getSupabaseConfig();
-  if (!config) throw new Error('Supabase environment variables are missing.');
-
-  const revisionFilter =
-    typeof expectedRevision === 'number'
-      ? `&game_state->>revision=eq.${encodeURIComponent(String(expectedRevision))}`
-      : '';
-
-  const response = await fetch(`${config.url}/rest/v1/rooms?id=eq.${roomId}${revisionFilter}`, {
-    method: 'PATCH',
-    headers: {
-      ...getHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify({
-      game_state: gameState,
-      status: 'active',
-    }),
+  let query = supabase.from('rooms').update({
+    game_state: gameState,
+    status: 'active',
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to update room state: ${response.status}`);
+  query = query.eq('id', roomId);
+
+  if (typeof expectedRevision === 'number') {
+    query = query.eq('game_state->>revision', String(expectedRevision));
   }
 
-  const data = (await response.json()) as RoomRow<T>[];
+  const { data, error } = await query.select().single();
 
-  if (typeof expectedRevision === 'number' && !data[0]) {
-    throw new Error('Realtime conflict: stale revision');
+  if (error) {
+    if (error.code === 'PGRST116' && typeof expectedRevision === 'number') {
+      throw new Error('Realtime conflict: stale revision');
+    }
+    throw new Error(`Failed to update room state: ${error.message}`);
   }
 
-  return data[0] ?? null;
+  return data as RoomRow<T>;
 };
