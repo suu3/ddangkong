@@ -12,8 +12,8 @@ interface RoomSharePanelProps {
   localActor: string;
   hasConfig: boolean;
   lastActor?: string | null;
-  roomTitle?: string | null;
-  maxPlayers?: number | null;
+  roomName?: string | null;
+  maxCapacity?: number | null;
   onCreateRoom: () => Promise<void>;
 }
 
@@ -24,8 +24,8 @@ export default function RoomSharePanel({
   hasConfig,
   onCreateRoom,
   lastActor,
-  roomTitle,
-  maxPlayers,
+  roomName,
+  maxCapacity,
 }: RoomSharePanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -149,7 +149,7 @@ export default function RoomSharePanel({
 
           <div className="flex justify-between items-start mb-3 pr-6">
             <div>
-              <p className="font-bold text-sm text-chocolate truncate max-w-[140px]">{roomTitle || '연결된 방'}</p>
+              <p className="font-bold text-sm text-chocolate truncate max-w-[140px]">{roomName || '연결된 방'}</p>
               <p className="text-[10px] text-gray-400">ID: {localActor.slice(0, 8)}...</p>
             </div>
             <button onClick={handleLeave} className="text-[10px] text-gray-400 hover:text-red-500 underline">
@@ -165,7 +165,7 @@ export default function RoomSharePanel({
             <p className="flex justify-between">
               <span>접속 인원:</span>
               <span className="font-bold text-orange-600">
-                {presenceCount} {maxPlayers ? `/ ${maxPlayers}` : ''} 명
+                {presenceCount} {maxCapacity ? `/ ${maxCapacity}` : ''} 명
               </span>
             </p>
           </div>

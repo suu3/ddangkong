@@ -43,9 +43,9 @@ export default function Coffee() {
     revision: 0,
     lastActor: null,
   });
-  const [roomInfo, setRoomInfo] = React.useState<{ title: string | null; maxPlayers: number | null }>({
-    title: null,
-    maxPlayers: null,
+  const [roomInfo, setRoomInfo] = React.useState<{ name: string | null; maxCapacity: number | null }>({
+    name: null,
+    maxCapacity: null,
   });
   const sendStateRef = React.useRef<((state: RouletteGameState) => void) | null>(null);
 
@@ -167,7 +167,7 @@ export default function Coffee() {
     getRoom<RouletteGameState>(roomId).then(room => {
       if (!mounted || !room) return;
       setRealtimeState(room.game_state);
-      setRoomInfo({ title: room.title, maxPlayers: room.max_players ?? null });
+      setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
 
     const { unsubscribe, sendState } = subscribeRoomState<RouletteGameState>({
@@ -217,8 +217,8 @@ export default function Coffee() {
         hasConfig={hasSupabaseConfig()}
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
-        roomTitle={roomInfo.title}
-        maxPlayers={roomInfo.maxPlayers}
+        roomName={roomInfo.name}
+        maxCapacity={roomInfo.maxCapacity}
       />
       {renderPrevBtn}
       <RouletteContext.Provider

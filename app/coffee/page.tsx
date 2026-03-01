@@ -52,9 +52,9 @@ export default function Coffee() {
     lastActor: null,
     selections: {},
   });
-  const [roomInfo, setRoomInfo] = React.useState<{ title: string | null; maxPlayers: number | null }>({
-    title: null,
-    maxPlayers: null,
+  const [roomInfo, setRoomInfo] = React.useState<{ name: string | null; maxCapacity: number | null }>({
+    name: null,
+    maxCapacity: null,
   });
   const [activeSelections, setActiveSelections] = React.useState<
     Record<string, { actor: string; cardIndex: number | null }>
@@ -197,7 +197,7 @@ export default function Coffee() {
     getRoom<CoffeeGameState>(roomId).then(room => {
       if (!mounted || !room) return;
       setRealtimeState(room.game_state);
-      setRoomInfo({ title: room.title, maxPlayers: room.max_players ?? null });
+      setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
 
     const { unsubscribe, sendState } = subscribeRoomState<CoffeeGameState>({
@@ -289,8 +289,8 @@ export default function Coffee() {
         hasConfig={hasSupabaseConfig()}
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
-        roomTitle={roomInfo.title}
-        maxPlayers={roomInfo.maxPlayers}
+        roomName={roomInfo.name}
+        maxCapacity={roomInfo.maxCapacity}
       />
       {renderPrevBtn}
       <CoffeeContext.Provider
