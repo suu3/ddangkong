@@ -147,12 +147,12 @@ export default function RoomSharePanel({
             닫기
           </button>
 
-          <div className="flex justify-between items-start mb-3 pr-6">
+          <div className="flex items-start justify-between pr-10">
             <div>
               <p className="font-bold text-sm text-chocolate truncate max-w-[140px]">{roomName || '연결된 방'}</p>
               <p className="text-[10px] text-gray-400">ID: {localActor.slice(0, 8)}...</p>
             </div>
-            <button onClick={handleLeave} className="text-[10px] text-gray-400 hover:text-red-500 underline">
+            <button onClick={handleLeave} className="text-[10px] mt-1 text-gray-400 hover:text-red-500 underline">
               나가기
             </button>
           </div>
