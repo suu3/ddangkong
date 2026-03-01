@@ -90,7 +90,7 @@ export default function RoomSharePanel({
 
   if (!roomId) {
     return (
-      <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px]">
+      <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px] m-auto">
         <MainButton variant="outlined" color="chocolate" onClick={onCreateRoom}>
           {gameType === 'coffee' ? '커피내기 실시간 공유' : '룰렛 실시간 공유'}
         </MainButton>
