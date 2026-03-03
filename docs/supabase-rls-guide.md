@@ -18,7 +18,7 @@ for insert
 to anon
 with check (
   status = 'active'
-  and game_type in ('coffee', 'roulette')
+  and game_type in ('coffee', 'roulette', 'hot_potato')
 );
 
 -- 2) 방 조회 허용

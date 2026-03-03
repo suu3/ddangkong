@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import clsx from 'clsx';
 
 interface RoomSharePanelProps {
-  gameType: 'coffee' | 'roulette';
+  gameType: 'coffee' | 'roulette' | 'hot_potato';
   roomId: string | null;
   localActor: string;
   hasConfig: boolean;
@@ -163,7 +163,7 @@ export default function RoomSharePanel({
 
               <div className="pr-10 mb-3">
                 <p className="font-bold text-sm text-chocolate">
-                  {gameType === 'coffee' ? '커피내기' : '룰렛'} 실시간 공유
+                  {gameType === 'coffee' ? '커피내기' : gameType === 'roulette' ? '룰렛' : '폭탄 돌리기'} 실시간 공유
                 </p>
               </div>
 
@@ -208,7 +208,11 @@ export default function RoomSharePanel({
     return (
       <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px] m-auto">
         <MainButton variant="outlined" color="chocolate" onClick={onCreateRoom}>
-          {gameType === 'coffee' ? '커피내기 실시간 공유' : '룰렛 실시간 공유'}
+          {gameType === 'coffee'
+            ? '커피내기 실시간 공유'
+            : gameType === 'roulette'
+              ? '룰렛 실시간 공유'
+              : '폭탄 돌리기 실시간 공유'}
         </MainButton>
 
         {isJoinOpen ? (

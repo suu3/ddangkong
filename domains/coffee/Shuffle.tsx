@@ -53,7 +53,10 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
     handleStep('next');
   };
 
-  const triggerShuffle = (containerRef: RefObject<HTMLDivElement>, boxRef: RefObject<(HTMLDivElement | null)[]>) => {
+  const triggerShuffle = (
+    containerRef: RefObject<HTMLDivElement | null>,
+    boxRef: RefObject<(HTMLDivElement | null)[]>
+  ) => {
     const container = containerRef.current;
     const box = boxRef.current;
 
@@ -139,7 +142,9 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
       return (
         <Lottery
           key={i}
-          ref={el => (boxRef.current[i] = el)}
+          ref={el => {
+            boxRef.current[i] = el;
+          }}
           activeSelectors={selectors}
           className="cursor-pointer transition-transform hover:scale-105 active:scale-95"
           onClick={() => handleCardSelect?.(isMySelection ? null : i)}

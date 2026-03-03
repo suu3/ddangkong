@@ -14,8 +14,14 @@ interface RealtimeStateWithRevision {
   revision?: number;
 }
 
+const getDefaultRoomName = (gameType: 'coffee' | 'roulette' | 'hot_potato') => {
+  if (gameType === 'coffee') return '커피내기 방';
+  if (gameType === 'roulette') return '룰렛 방';
+  return '폭탄 돌리기 방';
+};
+
 export const createRoom = async <T>(
-  gameType: 'coffee' | 'roulette',
+  gameType: 'coffee' | 'roulette' | 'hot_potato',
   gameState: T,
   options?: { name?: string; maxCapacity?: number }
 ) => {
@@ -24,7 +30,7 @@ export const createRoom = async <T>(
     id,
     status: 'active',
     game_type: gameType,
-    name: options?.name || `${gameType === 'coffee' ? '커피내기' : '룰렛'} 방`,
+    name: options?.name || getDefaultRoomName(gameType),
     max_capacity: options?.maxCapacity || 10,
     game_state: gameState,
   };
@@ -35,7 +41,21 @@ export const createRoom = async <T>(
     .select('id,status,game_type,name,max_capacity,game_state,created_at')
     .single();
 
-  if (error) throw new Error(`Failed to create room: ${error.message}`);
+  if (error) {
+    const looksLikeRlsError =
+      error.code === '42501' ||
+      error.message.toLowerCase().includes('row-level security') ||
+      error.message.toLowerCase().includes('permission denied');
+
+    if (looksLikeRlsError) {
+      throw new Error(
+        `Failed to create room: RLS policy blocked insert for game_type="${gameType}". ` +
+          `Allow this game_type in your rooms INSERT policy (e.g. game_type in ('coffee','roulette','hot_potato')).`
+      );
+    }
+
+    throw new Error(`Failed to create room: ${error.message}`);
+  }
   return data as RoomRow<T>;
 };
 
@@ -47,7 +67,7 @@ export const getRoom = async <T>(roomId: string) => {
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
+    if (error.code === 'PGRST116') return null;
     throw new Error(`Failed to fetch room: ${error.message}`);
   }
 
@@ -76,6 +96,7 @@ export const updateRoomState = async <T extends RealtimeStateWithRevision>(
     if (error.code === 'PGRST116' && typeof expectedRevision === 'number') {
       throw new Error('Realtime conflict: stale revision');
     }
+
     throw new Error(`Failed to update room state: ${error.message}`);
   }
 

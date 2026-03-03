@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useReducer } from 'react';
+import React, { Suspense, useCallback, useEffect, useReducer } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Loading from '@/domains/coffee/Loading';
@@ -33,7 +33,7 @@ interface CoffeeGameState {
   selections: Record<string, number | null>; // actorId -> cardIndex
 }
 
-export default function Coffee() {
+function CoffeeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -319,5 +319,13 @@ export default function Coffee() {
         </Container>
       </CoffeeContext.Provider>
     </div>
+  );
+}
+
+export default function Coffee() {
+  return (
+    <Suspense fallback={<div className="h-screen w-screen" />}>
+      <CoffeeContent />
+    </Suspense>
   );
 }

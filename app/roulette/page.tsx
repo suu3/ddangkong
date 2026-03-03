@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useReducer } from 'react';
+import React, { Suspense, useCallback, useEffect, useReducer } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -27,7 +27,7 @@ interface RouletteGameState {
 
 type RealtimeDraftState = Omit<RouletteGameState, 'revision' | 'lastActor'>;
 
-export default function Coffee() {
+function CoffeeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -298,5 +298,13 @@ export default function Coffee() {
         </Container>
       </RouletteContext.Provider>
     </div>
+  );
+}
+
+export default function Coffee() {
+  return (
+    <Suspense fallback={<div className="h-screen w-screen" />}>
+      <CoffeeContent />
+    </Suspense>
   );
 }

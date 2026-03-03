@@ -2,8 +2,13 @@
 const withPWA = require('next-pwa');
 const isProduction = process.env.NODE_ENV === 'production';
 const runtimeCaching = require('next-pwa/cache.js');
+const disablePWA = process.env.DISABLE_PWA === '1';
 
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: process.env.SKIP_NEXT_TYPECHECK === '1',
+  },
+
   webpack: (config, options) => {
     config.module.rules.push({
       test: /\.(mp4)$/i,
@@ -31,6 +36,6 @@ const nextConfig = {
 
 module.exports = withPWA({
   dest: 'public',
-  disable: !isProduction,
+  disable: disablePWA || !isProduction,
   runtimeCaching: runtimeCaching,
 })(nextConfig);
