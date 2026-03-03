@@ -36,6 +36,18 @@ export default function RoomSharePanel({
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const router = useRouter();
 
+  const getRoomLockKey = () => `active-room:${gameType}:${localActor}`;
+
+  const parseRoomLock = (value: string | null): { roomId?: string } | null => {
+    if (!value) return null;
+
+    try {
+      return JSON.parse(value) as { roomId?: string };
+    } catch {
+      return null;
+    }
+  };
+
   const shareUrl = useMemo(() => {
     if (!roomId || typeof window === 'undefined') return '';
     const current = new URL(window.location.href);
@@ -87,6 +99,39 @@ export default function RoomSharePanel({
       void supabase.removeChannel(channel);
     };
   }, [roomId, localActor, hasConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!roomId) return;
+    if (!localActor || localActor === 'guest') return;
+
+    const lockKey = getRoomLockKey();
+    const lockValue = JSON.stringify({ roomId, updatedAt: Date.now() });
+
+    window.localStorage.setItem(lockKey, lockValue);
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== lockKey) return;
+      const nextLock = parseRoomLock(event.newValue);
+
+      // 같은 게임에서 다른 방이 활성화되면 현재 탭은 기존 방에서 자동 퇴장
+      if (nextLock?.roomId && nextLock.roomId !== roomId) {
+        const current = new URL(window.location.href);
+        current.searchParams.delete('roomId');
+        router.push(current.pathname);
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      const currentLock = parseRoomLock(window.localStorage.getItem(lockKey));
+      if (currentLock?.roomId === roomId) {
+        window.localStorage.removeItem(lockKey);
+      }
+    };
+  }, [gameType, localActor, roomId, router]);
 
   if (!hasConfig) return null;
 
