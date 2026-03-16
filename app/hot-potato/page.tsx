@@ -2,6 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import MainButton from '@/components/button/MainButton';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
@@ -716,7 +717,16 @@ function HotPotatoPageContent() {
 
         {roomState.game.status === 'running' && (
           <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4">
-            <div className="text-center text-7xl">💣</div>
+            <div className="mx-auto h-48 w-48 sm:h-56 sm:w-56">
+              <Image
+                src="/hot-potato/bomb.png"
+                alt="Hot potato bomb character"
+                width={320}
+                height={320}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </div>
             <p className="mt-2 text-center text-lg font-semibold text-gray-900">
               현재 소유자: {holderPlayer?.nickname ?? '알 수 없음'}
             </p>

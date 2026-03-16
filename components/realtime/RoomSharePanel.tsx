@@ -1,13 +1,14 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import MainButton from '@/components/button/MainButton';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import clsx from 'clsx';
+import { RealtimeGameType } from '@/lib/realtime/rooms';
 
 interface RoomSharePanelProps {
-  gameType: 'coffee' | 'roulette' | 'hot_potato';
+  gameType: RealtimeGameType;
   roomId: string | null;
   localActor: string;
   hasConfig: boolean;
@@ -17,6 +18,13 @@ interface RoomSharePanelProps {
   maxCapacity?: number | null;
   onCreateRoom: () => Promise<void>;
 }
+
+const getGameLabel = (gameType: RealtimeGameType) => {
+  if (gameType === 'coffee') return '커피내기';
+  if (gameType === 'roulette') return '룰렛';
+  if (gameType === 'hot_potato') return '폭탄 돌리기';
+  return '팀 나누기';
+};
 
 export default function RoomSharePanel({
   gameType,
@@ -35,8 +43,7 @@ export default function RoomSharePanel({
   const [inputRoomId, setInputRoomId] = useState('');
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const router = useRouter();
-
-  const getRoomLockKey = () => `active-room:${gameType}:${localActor}`;
+  const gameLabel = useMemo(() => getGameLabel(gameType), [gameType]);
 
   const parseRoomLock = (value: string | null): { roomId?: string } | null => {
     if (!value) return null;
@@ -105,7 +112,7 @@ export default function RoomSharePanel({
     if (!roomId) return;
     if (!localActor || localActor === 'guest') return;
 
-    const lockKey = getRoomLockKey();
+    const lockKey = `active-room:${gameType}:${localActor}`;
     const lockValue = JSON.stringify({ roomId, updatedAt: Date.now() });
 
     window.localStorage.setItem(lockKey, lockValue);
@@ -162,9 +169,7 @@ export default function RoomSharePanel({
               </button>
 
               <div className="pr-10 mb-3">
-                <p className="font-bold text-sm text-chocolate">
-                  {gameType === 'coffee' ? '커피내기' : gameType === 'roulette' ? '룰렛' : '폭탄 돌리기'} 실시간 공유
-                </p>
+                <p className="font-bold text-sm text-chocolate">{gameLabel} 실시간 공유</p>
               </div>
 
               <MainButton className="mb-3" variant="outlined" color="chocolate" onClick={onCreateRoom}>
@@ -208,11 +213,7 @@ export default function RoomSharePanel({
     return (
       <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px] m-auto">
         <MainButton variant="outlined" color="chocolate" onClick={onCreateRoom}>
-          {gameType === 'coffee'
-            ? '커피내기 실시간 공유'
-            : gameType === 'roulette'
-              ? '룰렛 실시간 공유'
-              : '폭탄 돌리기 실시간 공유'}
+          {gameLabel} 실시간 공유
         </MainButton>
 
         {isJoinOpen ? (

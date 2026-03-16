@@ -14,14 +14,17 @@ interface RealtimeStateWithRevision {
   revision?: number;
 }
 
-const getDefaultRoomName = (gameType: 'coffee' | 'roulette' | 'hot_potato') => {
+export type RealtimeGameType = 'coffee' | 'roulette' | 'hot_potato' | 'team_split';
+
+const getDefaultRoomName = (gameType: RealtimeGameType) => {
   if (gameType === 'coffee') return '커피내기 방';
   if (gameType === 'roulette') return '룰렛 방';
-  return '폭탄 돌리기 방';
+  if (gameType === 'hot_potato') return '폭탄 돌리기 방';
+  return '팀 나누기 방';
 };
 
 export const createRoom = async <T>(
-  gameType: 'coffee' | 'roulette' | 'hot_potato',
+  gameType: RealtimeGameType,
   gameState: T,
   options?: { name?: string; maxCapacity?: number }
 ) => {
@@ -50,7 +53,7 @@ export const createRoom = async <T>(
     if (looksLikeRlsError) {
       throw new Error(
         `Failed to create room: RLS policy blocked insert for game_type="${gameType}". ` +
-          `Allow this game_type in your rooms INSERT policy (e.g. game_type in ('coffee','roulette','hot_potato')).`
+          `Allow this game_type in your rooms INSERT policy (e.g. game_type in ('coffee','roulette','hot_potato','team_split')).`
       );
     }
 

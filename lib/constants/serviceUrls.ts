@@ -10,3 +10,6 @@ export const ROULETTE_RESULT = '/roulette/result';
 
 //hot potato
 export const HOT_POTATO_HOME = '/hot-potato';
+
+//team split
+export const TEAM_SPLIT_HOME = '/team-split';

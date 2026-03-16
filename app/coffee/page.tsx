@@ -233,14 +233,6 @@ function CoffeeContent() {
     playSound(playerRef?.current?.audio?.current);
   }, [allMuteState.isAllMuted, playSound, playerRef]);
 
-  // useEffect(() => {
-  //   const button = document.createElement('button');
-  //   document.body.appendChild(button);
-  //   button.addEventListener('click', () => {
-  //     button.remove();
-  //   }
-  // }, []);
-
   useEffect(() => {
     if (!roomId || !isRealtimeEnabled) return;
 

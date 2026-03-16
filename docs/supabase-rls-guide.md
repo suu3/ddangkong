@@ -18,7 +18,7 @@ for insert
 to anon
 with check (
   status = 'active'
-  and game_type in ('coffee', 'roulette', 'hot_potato')
+  and game_type in ('coffee', 'roulette', 'hot_potato', 'team_split')
 );
 
 -- 2) 방 조회 허용
@@ -47,3 +47,4 @@ with check (status = 'active');
 - Viewer가 같은 방 조회 가능
 - Host 액션에 따라 `game_state` 업데이트 및 Realtime 수신 가능
 - 만료/종료된 방 접근 제한 동작 확인
+
