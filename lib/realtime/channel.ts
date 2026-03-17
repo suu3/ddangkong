@@ -28,17 +28,18 @@ export const subscribeRoomState = <T>({
         table: 'rooms',
         filter: `id=eq.${roomId}`,
       },
-      payload => {
+      (payload: any) => {
         if (payload.new && (payload.new as any).game_state) {
           onState(payload.new.game_state as T);
         }
       }
     )
     // 2. Broadcast 감지 (진짜 실시간 - WebRTC 대용)
-    .on('broadcast', { event: 'state_change' }, ({ payload }) => {
+    .on('broadcast', { event: 'state_change' }, (data: any) => {
+      const { payload } = data;
       onState(payload as T);
     })
-    .subscribe((status, error) => {
+    .subscribe((status: string, error?: Error) => {
       if (status === 'CHANNEL_ERROR' || error) {
         onError?.(error?.message || 'Realtime channel error');
       }

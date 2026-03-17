@@ -9,6 +9,8 @@ const nextConfig = {
     ignoreBuildErrors: process.env.SKIP_NEXT_TYPECHECK === '1',
   },
 
+  turbopack: {},
+
   webpack: (config, options) => {
     config.module.rules.push({
       test: /\.(mp4)$/i,

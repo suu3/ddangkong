@@ -523,7 +523,7 @@ function HotPotatoPageContent() {
 
         setConnectedActors(Array.from(actors));
       })
-      .subscribe(async status => {
+      .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({ actor: clientActor });
         }

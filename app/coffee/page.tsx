@@ -248,7 +248,8 @@ function CoffeeContent() {
         const simplified: Record<string, { actor: string; cardIndex: number | null }> = {};
 
         Object.entries(state).forEach(([key, presences]) => {
-          const first = presences[0] as any;
+          const typedPresences = presences as any[];
+          const first = typedPresences[0];
           if (first) {
             simplified[key] = {
               actor: first.actor,
@@ -259,7 +260,7 @@ function CoffeeContent() {
 
         setActiveSelections(simplified);
       })
-      .subscribe(async status => {
+      .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({ actor: clientActor, cardIndex: null });
         }
