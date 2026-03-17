@@ -30,12 +30,18 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
 
   const {
     allMuteState: { isAllMuted },
+    activeSelections,
+    handleCardSelect,
+    clientActor,
   } = useContext(CoffeeContext);
   const { playerRef, playSound } = usePlayAudio();
 
   const onClickShuffle = () => {
     playSound(playerRef?.current?.audio?.current);
     setIsShuffling(true);
+    // 셔플 시 모든 선택 초기화
+    handleCardSelect?.(null);
+
     setTimeout(() => {
       setIsShuffling(false);
     }, ANIMATION_DURATION + ANIMATION_TOTAL);
@@ -47,7 +53,10 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
     handleStep('next');
   };
 
-  const triggerShuffle = (containerRef: RefObject<HTMLDivElement>, boxRef: RefObject<(HTMLDivElement | null)[]>) => {
+  const triggerShuffle = (
+    containerRef: RefObject<HTMLDivElement | null>,
+    boxRef: RefObject<(HTMLDivElement | null)[]>
+  ) => {
     const container = containerRef.current;
     const box = boxRef.current;
 
@@ -80,9 +89,9 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
       box.forEach((item: HTMLDivElement | null, index: number) => {
         if (!item) return;
 
-        const [firstX, firstY] = firstLocation[index - 1];
-        const [moveX, moveY] = moveDistances[index - 1];
-        const [returnX, returnY] = returnDistances[index - 1];
+        const [firstX, firstY] = firstLocation[index];
+        const [moveX, moveY] = moveDistances[index];
+        const [returnX, returnY] = returnDistances[index];
 
         item.animate(
           {
@@ -103,11 +112,6 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
         );
       });
 
-      /**
-       * Card의 위치를 random으로 바꿀 때, 이동한 위치에서 새로운 거리계산은 가능하지만 transform 속성은 바뀌지 않는다.
-       * 따라서 처음의 위치를 useState로 저장해놓고, transform 할때마다 마지막 위치를 누적 시켜야 한다.
-       */
-
       setFirstLocation(prev => {
         const temp = prev.map((_, index) => {
           const [firstX, firstY] = prev[index];
@@ -125,8 +129,26 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
     cnt,
     Group: CardContainer,
     getCard: (i: number) => {
+      // 해당 카드를 선택 중인 사용자들 필터링 (나 제외)
+      const selectors = Object.entries(activeSelections || {})
+        .filter(([id, data]) => data.cardIndex === i && id !== clientActor)
+        .map(([id, data]) => ({ id, name: data.actor.slice(0, 5) }));
+
+      const isMySelection = activeSelections?.[clientActor || '']?.cardIndex === i;
+      if (isMySelection) {
+        selectors.push({ id: clientActor!, name: '나' });
+      }
+
       return (
-        <Lottery key={i} ref={el => (boxRef.current[i] = el)}>
+        <Lottery
+          key={i}
+          ref={el => {
+            boxRef.current[i] = el;
+          }}
+          activeSelectors={selectors}
+          className="cursor-pointer transition-transform hover:scale-105 active:scale-95"
+          onClick={() => handleCardSelect?.(isMySelection ? null : i)}
+        >
           <Lottery.Back>{getDoubleDigitFormat(i)}</Lottery.Back>
         </Lottery>
       );

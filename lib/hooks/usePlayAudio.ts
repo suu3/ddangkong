@@ -1,9 +1,9 @@
-import { RefObject, useState, useRef, useEffect } from 'react';
+import { RefObject, useRef } from 'react';
 import AudioPlayer from 'react-h5-audio-player';
 
 const usePlayAudio = () //isAllMuted: boolean
 : {
-  playerRef: RefObject<AudioPlayer>;
+  playerRef: RefObject<AudioPlayer | null>;
   //onToggle: () => void;
   //isPaused: boolean;
   playSound: (audio: HTMLAudioElement | null | undefined) => void;

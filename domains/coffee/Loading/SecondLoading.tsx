@@ -29,7 +29,10 @@ const SecondLoading = ({ cnt, result = '', changed = false }: SecondLoadingProps
 
   const resultText = changed ? `${result}번~~~!` : '커피를 쏠 사람은 바로~~';
 
-  const triggerShuffle = (containerRef: RefObject<HTMLDivElement>, boxRef: RefObject<(HTMLDivElement | null)[]>) => {
+  const triggerShuffle = (
+    containerRef: RefObject<HTMLDivElement | null>,
+    boxRef: RefObject<(HTMLDivElement | null)[]>
+  ) => {
     const container = containerRef.current;
     const box = boxRef.current;
 
@@ -102,7 +105,9 @@ const SecondLoading = ({ cnt, result = '', changed = false }: SecondLoadingProps
         <Lottery
           key={i}
           ref={el => {
-            if (isAnimationTriggered) return (boxRef.current[boxRef.current.length] = el);
+            if (isAnimationTriggered) {
+              boxRef.current[boxRef.current.length] = el;
+            }
           }}
           style={
             isAnimationTriggered

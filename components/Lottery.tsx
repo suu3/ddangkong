@@ -9,16 +9,37 @@ interface LotteryProps {
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
+  onClick?: () => void;
+  activeSelectors?: Array<{ id: string; name: string }>;
 }
 
-const Lottery = forwardRef<HTMLDivElement, LotteryProps>(({ children, className = '', style = {} }, ref) => {
-  return (
-    <div className={clsx(styles['wrapper'], className)} style={style} ref={ref}>
-      <Image priority src={noteImage} fill sizes="100%" alt="제비" />
-      {children}
-    </div>
-  );
-});
+const Lottery = forwardRef<HTMLDivElement, LotteryProps>(
+  ({ children, className = '', style = {}, onClick, activeSelectors = [] }, ref) => {
+    // 간단한 해시로 색상 생성
+    const getSelectorColor = (id: string) => {
+      const colors = ['#E91E63', '#9C27B0', '#2196F3', '#00BCD4', '#4CAF50', '#FFC107', '#FF5722'];
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      return colors[Math.abs(hash) % colors.length];
+    };
+
+    return (
+      <div className={clsx(styles['wrapper'], className)} style={style} ref={ref} onClick={onClick}>
+        <Image priority src={noteImage} fill sizes="100%" alt="제비" />
+        {activeSelectors.map(selector => (
+          <div
+            key={selector.id}
+            className={styles['selection-highlight']}
+            style={{ '--highlight-color': getSelectorColor(selector.id) } as any}
+          >
+            <div className={styles['selector-label']}>{selector.name}</div>
+          </div>
+        ))}
+        {children}
+      </div>
+    );
+  }
+);
 
 Lottery.displayName = 'Lottery';
 

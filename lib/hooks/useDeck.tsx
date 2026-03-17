@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 
 export interface ContainerProps {
   children: ReactNode;
@@ -7,7 +7,7 @@ export interface ContainerProps {
 interface useDeckProps {
   cnt: number;
   getCard: (i: number) => ReactNode;
-  Group: ({ children }: ContainerProps) => JSX.Element;
+  Group: ({ children }: ContainerProps) => ReactElement;
 }
 
 const useDeck = ({ cnt, getCard, Group }: useDeckProps) => {

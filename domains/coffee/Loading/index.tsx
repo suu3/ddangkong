@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 
 import useStep from '@/lib/hooks/useStep';
 import { useRouter } from 'next/navigation';
@@ -11,7 +11,14 @@ import SecondLoading from './SecondLoading';
 import { useTimeout } from '@/lib/hooks/useTimeout';
 import { LOTTERY_SCALE_ANIMATION_TIME, RESULT_TRANSITION_TIME } from '@/lib/constants/coffee';
 
-const Loading = () => {
+interface LoadingProps {
+  resultValue?: string | null;
+  roomId?: string | null;
+  role?: 'host' | 'viewer';
+  isRealtimeEnabled?: boolean;
+}
+
+const Loading = ({ resultValue, roomId, role, isRealtimeEnabled }: LoadingProps) => {
   const {
     allMuteState: { isAllMuted },
   } = useContext(CoffeeContext);
@@ -23,7 +30,13 @@ const Loading = () => {
   const {
     orderState: { boom, total },
   } = useContext(CoffeeContext);
-  const randomResult = useMemo(() => getLottery(total, boom).join(','), [total, boom]);
+  const randomResult = useMemo(() => {
+    if (isRealtimeEnabled) {
+      return resultValue ?? '';
+    }
+
+    return getLottery(total, boom).join(',');
+  }, [boom, isRealtimeEnabled, resultValue, total]);
 
   useTimeout(() => {
     handleStep('next');
@@ -35,7 +48,17 @@ const Loading = () => {
 
   useTimeout(
     () => {
-      router.push(`${COFFEE_RESULT}?boom=${randomResult}&muted=${isAllMuted}`);
+      if (isRealtimeEnabled && !randomResult) return;
+
+      const searchParams = new URLSearchParams({
+        boom: randomResult,
+        muted: String(isAllMuted),
+      });
+
+      if (roomId) searchParams.set('roomId', roomId);
+      if (role) searchParams.set('role', role);
+
+      router.push(`${COFFEE_RESULT}?${searchParams.toString()}`);
     },
     RESULT_TRANSITION_TIME * 2 + LOTTERY_SCALE_ANIMATION_TIME + 400 * boom + 500 // 앞선 애니메이션 시간 +  scale&fadeout 시간 + 1000: 딜레이
   );

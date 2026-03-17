@@ -15,6 +15,9 @@ export const CoffeeContext = React.createContext<{
   allMuteState: allMuteState;
   handleOrder: (type: CoffeeActionType) => void;
   handleAllMute: (type: SoundActionType) => void;
+  activeSelections?: Record<string, { actor: string; cardIndex: number | null }>;
+  handleCardSelect?: (cardIndex: number | null) => void;
+  clientActor?: string;
 }>({
   orderState: initialCoffeeState,
   allMuteState: initialallMuteState,

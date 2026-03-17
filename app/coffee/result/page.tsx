@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -21,7 +21,7 @@ import refreshIcon from '@/public/button/button_refresh.svg';
 import downloadIcon from '@/public/button/button_download.svg';
 import { COFFEE_HOME } from '@/lib/constants/serviceUrls';
 
-export default function CoffeeResult() {
+function CoffeeResultContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const boom = searchParams.get('boom');
@@ -48,7 +48,7 @@ export default function CoffeeResult() {
     } else {
       playSound(audio);
     }
-  }, [isMuted]);
+  }, [isMuted, pauseSound, playSound, playerRef]);
 
   return (
     <div className="p-[2.33rem]" ref={screenRef}>
@@ -85,5 +85,13 @@ export default function CoffeeResult() {
         </MainButton>
       </div>
     </div>
+  );
+}
+
+export default function CoffeeResult() {
+  return (
+    <Suspense fallback={<div className="h-screen w-screen" />}>
+      <CoffeeResultContent />
+    </Suspense>
   );
 }
