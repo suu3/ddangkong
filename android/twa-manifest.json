@@ -1,0 +1,46 @@
+{
+  "packageId": "app.xyz.ddangkong.twa",
+  "host": "ddangkong.suulab.xyz",
+  "name": "심심풀이 땅콩 - 친구와 함께 즐기는 복불복 게임",
+  "launcherName": "심심풀이 땅콩",
+  "display": "standalone",
+  "themeColor": "#3d3131",
+  "themeColorDark": "#3d3131",
+  "navigationColor": "#3d3131",
+  "navigationColorDark": "#3d3131",
+  "navigationDividerColor": "#3d3131",
+  "navigationDividerColorDark": "#3d3131",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "enableSiteSettingsShortcut": true,
+  "startUrl": "/coffee",
+  "iconUrl": "https://ddangkong.suulab.xyz/logos/icon-512x512.png",
+  "maskableIconUrl": "https://ddangkong.suulab.xyz/logos/icon-192x192.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "android/keys/ddangkong-upload-key.jks",
+    "alias": "upload"
+  },
+  "appVersionCode": 1,
+  "appVersion": "0.1.0",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ddangkong.suulab.xyz/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "name": "play-store-upload",
+      "value": "4F:EC:EA:DD:77:EB:C0:76:99:97:BC:4C:9F:70:50:0C:52:C6:30:01:7D:39:46:0D:A7:A3:72:E9:FF:61:B4:65"
+    }
+  ],
+  "additionalTrustedOrigins": []
+}

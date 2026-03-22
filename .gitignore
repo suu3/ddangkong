@@ -38,3 +38,5 @@ next-env.d.ts
 # pwa
 public/sw.js
 public/workbox-*.js
+android/keys/*.jks
+android/keys/*.keystore
