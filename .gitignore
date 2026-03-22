@@ -40,3 +40,8 @@ public/sw.js
 public/workbox-*.js
 android/keys/*.jks
 android/keys/*.keystore
+android/*.jks
+android/*.keystore
+android/local.properties
+android/.gradle/
+android/app/build/
