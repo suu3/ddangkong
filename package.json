@@ -11,9 +11,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "twa:init": "pnpm dlx @bubblewrap/cli@latest init --manifest=https://ddangkong.suulab.xyz/manifest.json --directory=android",
-    "twa:build": "pnpm dlx @bubblewrap/cli@latest build --manifest=./android/twa-manifest.json",
-    "twa:update": "pnpm dlx @bubblewrap/cli@latest update --manifest=./android/twa-manifest.json",
+    "twa:init": "cd android && pnpm dlx @bubblewrap/cli@latest init --manifest=https://ddangkong.suulab.xyz/manifest.json --directory=.",
+    "twa:build": "cd android && pnpm dlx @bubblewrap/cli@latest build --manifest=./twa-manifest.json",
+    "twa:update": "cd android && pnpm dlx @bubblewrap/cli@latest update --manifest=./twa-manifest.json",
     "prepare": "husky"
   },
   "dependencies": {
