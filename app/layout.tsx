@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import Navigation from '@/components/@layout/Navigation';
+import PwaRegistrar from '@/components/PwaRegistrar';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ddangkong.suulab.xyz'),
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body>
+        <PwaRegistrar />
         <Navigation />
         <main className="main">{children}</main>
       </body>

@@ -36,12 +36,16 @@ yarn-error.log*
 next-env.d.ts
 
 # pwa
-public/sw.js
 public/workbox-*.js
-android/keys/*.jks
-android/keys/*.keystore
-android/*.jks
-android/*.keystore
-android/local.properties
-android/.gradle/
-android/app/build/
+keys/*.jks
+keys/*.keystore
+*.jks
+*.keystore
+local.properties
+.gradle/
+app/build/
+android/
+*.aab
+*.apk
+*.apk.*
+*.txt
