@@ -760,7 +760,7 @@ function HotPotatoPageContent() {
           </ul>
 
           {roomState.game.status !== 'running' && (
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <div className="mt-4 flex gap-2">
               <input
                 value={nicknameInput}
                 onChange={event => setNicknameInput(event.target.value)}
@@ -791,7 +791,7 @@ function HotPotatoPageContent() {
 
         {roomState.game.status === 'running' && (
           <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4">
-            <div className="mx-auto h-48 w-48 sm:h-56 sm:w-56">
+            <div className="mx-auto h-56 w-56">
               <Image
                 src="/hot-potato/bomb.png"
                 alt="Hot potato bomb character"

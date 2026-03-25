@@ -46,8 +46,8 @@ export default function RoomSharePanel({
   const gameLabel = useMemo(() => getGameLabel(gameType), [gameType]);
   const floatingPanelClass = clsx(
     'z-[1001] overflow-hidden rounded-2xl border border-chocolate/20 bg-white/95 shadow-xl backdrop-blur-sm transition-[width,height,padding] duration-300 ease-out',
-    'mx-auto mb-4 w-full max-w-xs md:fixed md:bottom-4 md:right-4 md:mb-0 md:mx-0',
-    isCollapsed ? 'h-11 px-2 py-1.5 md:w-[76px]' : 'p-4 md:w-64'
+    'fixed bottom-4 right-4 mb-0 w-full max-w-xs',
+    isCollapsed ? 'h-11 w-[76px] px-2 py-1.5' : 'w-64 p-4'
   );
 
   const parseRoomLock = (value: string | null): { roomId?: string } | null => {

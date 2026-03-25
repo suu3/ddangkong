@@ -44,7 +44,8 @@ keys/*.keystore
 local.properties
 .gradle/
 app/build/
-android/
+android
+twa-manifest.json
 *.aab
 *.apk
 *.apk.*
