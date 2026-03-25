@@ -16,6 +16,11 @@
 - `pnpm dev`
 - 브라우저에서 `http://localhost:3000` 접속
 
+## Android TWA
+- Android 프로젝트는 `/android` 디렉터리만 기준으로 관리
+- TWA 갱신: `pnpm twa:update`
+- TWA 빌드: `pnpm twa:build`
+
 ### 실시간 공유 테스트(선택)
 - `.env`에 Supabase 설정
   - `NEXT_PUBLIC_SUPABASE_URL`

@@ -89,15 +89,19 @@ const ERROR_MESSAGES: Record<string, string> = {
   ERR_ALREADY_ENDED: '이미 종료된 라운드입니다.',
 };
 
-const buildInitialRoomState = (hostId: string): HotPotatoRoomState => ({
+const buildInitialRoomState = (
+  hostId: string,
+  nickname = createNickname(hostId),
+  isReady = true
+): HotPotatoRoomState => ({
   revision: 0,
   lastActor: hostId,
   hostId,
   players: [
     {
       userId: hostId,
-      nickname: createNickname(hostId),
-      isReady: true,
+      nickname,
+      isReady,
       isSpectator: false,
     },
   ],
@@ -129,10 +133,12 @@ function HotPotatoPageContent() {
     name: null,
     maxCapacity: null,
   });
+  const [isRoomHydrated, setIsRoomHydrated] = useState(() => !roomId);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [connectedActors, setConnectedActors] = useState<string[]>([]);
   const [errorBanner, setErrorBanner] = useState<UiError | null>(null);
   const [nicknameInput, setNicknameInput] = useState('');
+  const nicknameInputRef = useRef('');
 
   const sendStateRef = useRef<((state: HotPotatoRoomState) => void) | null>(null);
   const actionSeqRef = useRef(0);
@@ -264,18 +270,31 @@ function HotPotatoPageContent() {
 
   const handleCreateRoom = async () => {
     const resolvedActor = clientActor === 'guest' ? await getServerActor() : clientActor;
+    const trimmedNickname = nicknameInput.trim();
+    const initialNickname = trimmedNickname || createNickname(resolvedActor);
+    const localReadyState = roomStateRef.current.players[0]?.isReady ?? true;
+
     if (clientActor === 'guest' && resolvedActor !== 'guest') {
       setClientActor(resolvedActor);
-      setNicknameInput(createNickname(resolvedActor));
+      setNicknameInput(initialNickname);
     }
 
-    const initial = buildInitialRoomState(resolvedActor);
+    const initial = buildInitialRoomState(resolvedActor, initialNickname, localReadyState);
     const room = await createRoom('hot_potato', initial, { name: '폭탄 돌리기 방' });
     router.push(`/hot-potato?roomId=${room.id}`);
   };
 
   const handleToggleReady = async () => {
-    if (!roomId) return;
+    if (!roomId) {
+      const localPlayer = roomStateRef.current.players[0];
+      const localActor = clientActor === 'guest' ? roomStateRef.current.hostId : clientActor;
+      const localNickname = localPlayer?.nickname || nicknameInput.trim() || createNickname(localActor);
+      const nextReady = !(localPlayer?.isReady ?? true);
+
+      applyRoomState(buildInitialRoomState(localActor, localNickname, nextReady));
+      return;
+    }
+
     setErrorBanner(null);
 
     await pushRoomState(current => ({
@@ -289,9 +308,16 @@ function HotPotatoPageContent() {
   };
 
   const handleSaveNickname = async () => {
-    if (!roomId) return;
     const trimmed = nicknameInput.trim();
     if (!trimmed) return;
+
+    if (!roomId) {
+      const localActor = clientActor === 'guest' ? roomStateRef.current.hostId : clientActor;
+      const localReady = roomStateRef.current.players[0]?.isReady ?? true;
+      applyRoomState(buildInitialRoomState(localActor, trimmed, localReady));
+      setNicknameInput(trimmed);
+      return;
+    }
 
     await pushRoomState(current => {
       const uniqueNickname = toUniqueNickname(trimmed, current.players, clientActor);
@@ -306,7 +332,7 @@ function HotPotatoPageContent() {
       };
     });
 
-    setNicknameInput('');
+    setNicknameInput(trimmed);
   };
 
   const handleStartGame = async () => {
@@ -466,7 +492,14 @@ function HotPotatoPageContent() {
     getServerActor().then(actor => {
       if (!mounted) return;
       setClientActor(actor);
-      setNicknameInput(createNickname(actor));
+      setNicknameInput(previous => {
+        const trimmed = previous.trim();
+        if (trimmed && trimmed !== createNickname('guest')) {
+          return previous;
+        }
+
+        return createNickname(actor);
+      });
     });
 
     return () => {
@@ -475,14 +508,39 @@ function HotPotatoPageContent() {
   }, []);
 
   useEffect(() => {
+    nicknameInputRef.current = nicknameInput;
+  }, [nicknameInput]);
+
+  useEffect(() => {
+    setIsRoomHydrated(!roomId);
+  }, [roomId]);
+
+  useEffect(() => {
+    if (roomId || clientActor === 'guest') return;
+
+    const currentHostId = roomStateRef.current.hostId;
+    const currentNickname = roomStateRef.current.players[0]?.nickname ?? '';
+    const currentReady = roomStateRef.current.players[0]?.isReady ?? true;
+    const preservedNickname =
+      currentNickname && currentNickname !== createNickname(currentHostId)
+        ? currentNickname
+        : nicknameInputRef.current.trim() || createNickname(clientActor);
+
+    applyRoomState(buildInitialRoomState(clientActor, preservedNickname, currentReady));
+  }, [applyRoomState, clientActor, roomId]);
+
+  useEffect(() => {
     if (!roomId) return;
 
     let mounted = true;
 
     getRoom<HotPotatoRoomState>(roomId).then(room => {
-      if (!mounted || !room) return;
-      applyRoomState(room.game_state);
-      setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
+      if (!mounted) return;
+      if (room) {
+        applyRoomState(room.game_state);
+        setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
+      }
+      setIsRoomHydrated(true);
     });
 
     const { unsubscribe, sendState } = subscribeRoomState<HotPotatoRoomState>({
@@ -490,6 +548,7 @@ function HotPotatoPageContent() {
       onState: state => {
         if (!mounted) return;
         applyRoomState(state);
+        setIsRoomHydrated(true);
       },
     });
 
@@ -536,7 +595,7 @@ function HotPotatoPageContent() {
   }, [clientActor, roomId]);
 
   useEffect(() => {
-    if (!roomId || !clientActor || clientActor === 'guest') return;
+    if (!roomId || !isRoomHydrated || !clientActor || clientActor === 'guest') return;
 
     const player = roomStateRef.current.players.find(item => item.userId === clientActor);
     const hasGuestPlaceholder = roomStateRef.current.players.some(item => item.userId === 'guest');
@@ -579,7 +638,22 @@ function HotPotatoPageContent() {
         },
       };
     });
-  }, [clientActor, pushRoomState, roomId]);
+  }, [clientActor, isRoomHydrated, pushRoomState, roomId]);
+
+  useEffect(() => {
+    if (roomState.game.status === 'running') return;
+
+    const currentPlayer = roomState.players.find(player => player.userId === clientActor);
+    if (!currentPlayer) return;
+
+    setNicknameInput(previous => {
+      if (previous.trim().length > 0 && previous !== createNickname(clientActor)) {
+        return previous;
+      }
+
+      return currentPlayer.nickname;
+    });
+  }, [clientActor, roomState.game.status, roomState.players]);
 
   useEffect(() => {
     const timer = setInterval(() => {

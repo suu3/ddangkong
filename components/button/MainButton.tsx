@@ -7,6 +7,7 @@ interface MainButtonProps {
   variant?: 'outlined' | 'contained' | 'icon';
   color?: 'chocolate';
   disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
   onClick?: MouseEventHandler<HTMLButtonElement>;
   className?: string;
 }
@@ -17,13 +18,14 @@ const MainButton = ({
   children,
   variant = 'contained',
   color = 'chocolate',
+  type = 'button',
   className,
 }: MainButtonProps) => {
   const btnCls = clsx(styles['button'], styles[variant], styles[color], className, {
     // [styles['disabled']]: disabled,
   });
   return (
-    <button onClick={onClick} className={btnCls} disabled={disabled}>
+    <button type={type} onClick={onClick} className={btnCls} disabled={disabled}>
       {children}
     </button>
   );
