@@ -8,14 +8,10 @@ import Order from '@/domains/coffee/Order';
 import Shuffle from '@/domains/coffee/Shuffle';
 import Start from '@/domains/coffee/Start';
 
-import PlayerButton from '@/domains/coffee/PlayerButton';
-import AudioPlayer from '@/components/AudioPlayer';
 import useStep from '@/lib/hooks/useStep';
-import usePlayAudio from '@/lib/hooks/usePlayAudio';
-import { coffeeReducer, CoffeeActionType, soundReducer, SoundActionType } from '@/lib/reducer/coffee';
-import { CoffeeContext, initialCoffeeState, initialallMuteState } from '@/lib/context/coffee';
+import { coffeeReducer, CoffeeActionType } from '@/lib/reducer/coffee';
+import { CoffeeContext, initialCoffeeState } from '@/lib/context/coffee';
 import prevBtnIcon from '@/public/button/button_prev.svg';
-import { BGM_URL } from '@/lib/constants/coffee';
 import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
@@ -23,6 +19,7 @@ import { supabase } from '@/lib/supabase/client';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { getLottery } from '@/lib/utils/random';
 import { getServerActor } from '@/lib/realtime/clientActor';
+import { useSound } from '@/lib/context/sound';
 
 interface CoffeeGameState {
   step: number;
@@ -43,7 +40,6 @@ function CoffeeContent() {
   const [step, Container, handleStep] = useStep(0);
   const [clientActor, setClientActor] = React.useState('guest');
   const [orderState, orderDispatch] = useReducer(coffeeReducer, initialCoffeeState);
-  const [allMuteState, soundDispatch] = useReducer(soundReducer, initialallMuteState);
   const [realtimeState, setRealtimeState] = React.useState<CoffeeGameState>({
     step: 0,
     orderState: initialCoffeeState,
@@ -60,13 +56,13 @@ function CoffeeContent() {
     Record<string, { actor: string; cardIndex: number | null }>
   >({});
 
-  const { playerRef, playSound } = usePlayAudio();
   const sendStateRef = React.useRef<((state: CoffeeGameState) => void) | null>(null);
   const presenceChannelRef = React.useRef<any>(null);
+  const { isMuted, setMuted } = useSound();
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
-  const isMainStep = currentStep === 0;
+  const allMuteState = React.useMemo(() => ({ isAllMuted: isMuted }), [isMuted]);
 
   const pushRealtimeState = useCallback(
     async (nextState: Omit<CoffeeGameState, 'revision' | 'lastActor' | 'selections'>) => {
@@ -143,14 +139,12 @@ function CoffeeContent() {
     handleStep(type);
   };
 
-  const onSoundToggle = () => {
-    const type = allMuteState.isAllMuted ? 'UNMUTE_SOUND' : 'MUTE_SOUND';
-    handleAllMute(type);
-  };
-
-  const handleAllMute = (type: SoundActionType) => {
-    soundDispatch({ type });
-  };
+  const handleAllMute = React.useCallback(
+    (type: 'UNMUTE_SOUND' | 'MUTE_SOUND') => {
+      setMuted(type === 'MUTE_SOUND');
+    },
+    [setMuted]
+  );
 
   const renderPrevBtn = currentStep !== 0 && (
     <Image
@@ -230,10 +224,6 @@ function CoffeeContent() {
   }, [currentStep, currentOrderState, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
 
   useEffect(() => {
-    playSound(playerRef?.current?.audio?.current);
-  }, [allMuteState.isAllMuted, playSound, playerRef]);
-
-  useEffect(() => {
     if (!roomId || !isRealtimeEnabled) return;
 
     let mounted = true;
@@ -274,18 +264,7 @@ function CoffeeContent() {
   }, [roomId, isRealtimeEnabled, clientActor]);
 
   return (
-    <div className="relative">
-      <RoomSharePanel
-        gameType="coffee"
-        roomId={roomId}
-        localActor={clientActor}
-        hasConfig={hasSupabaseConfig()}
-        preferFloatingEntry
-        onCreateRoom={handleCreateRoom}
-        lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
-        roomName={roomInfo.name}
-        maxCapacity={roomInfo.maxCapacity}
-      />
+    <div className="relative pb-28">
       {renderPrevBtn}
       <CoffeeContext.Provider
         value={{
@@ -298,8 +277,6 @@ function CoffeeContent() {
           clientActor,
         }}
       >
-        {!isMainStep && <AudioPlayer volume={0.4} ref={playerRef} src={BGM_URL} muted={allMuteState.isAllMuted} />}
-        {!isMainStep && <PlayerButton onSoundToggle={onSoundToggle} muted={allMuteState.isAllMuted} />}
         <Container curStep={currentStep}>
           <Start handleStep={handleStepWithSync} />
           <Order state={currentOrderState} handleStep={handleStepWithSync} />
@@ -311,6 +288,17 @@ function CoffeeContent() {
           />
         </Container>
       </CoffeeContext.Provider>
+      <RoomSharePanel
+        gameType="coffee"
+        roomId={roomId}
+        localActor={clientActor}
+        hasConfig={hasSupabaseConfig()}
+        preferFloatingEntry
+        onCreateRoom={handleCreateRoom}
+        lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
+        roomName={roomInfo.name}
+        maxCapacity={roomInfo.maxCapacity}
+      />
     </div>
   );
 }

@@ -23,7 +23,7 @@ const UpDownButton = ({ count, handleIncrease = () => {}, handleDecrease = () =>
   };
 
   const onClickDownBtn = () => {
-    if (count <= 0) return; //alert('최소 인원은 0명입니다.');
+    if (count <= 0) return;
     handleDecrease();
   };
 
@@ -31,25 +31,20 @@ const UpDownButton = ({ count, handleIncrease = () => {}, handleDecrease = () =>
     <div className={styles['wrapper']}>
       <Image src={boxImage} alt="" sizes="100%" loading="eager" />
       <div className={styles['inner']}>
-        <Image
+        <button
+          type="button"
           onClick={onClickDownBtn}
-          src={minusIcon}
-          alt="마이너스 버튼"
-          width={32}
-          height={32}
           className={clsx(styles['btn'], styles['minus'])}
-        />
+          aria-label="감소"
+        >
+          <Image src={minusIcon} alt="" width={32} height={32} />
+        </button>
         <UniqueText size="md" font="uhbee-seulvely" Tag="span" className={styles['cnt']}>
           {getDoubleDigitFormat(count)}
         </UniqueText>
-        <Image
-          onClick={onClickUpBtn}
-          src={plusIcon}
-          alt="더하기 버튼"
-          width={32}
-          height={32}
-          className={clsx(styles['btn'], styles['plus'])}
-        />
+        <button type="button" onClick={onClickUpBtn} className={clsx(styles['btn'], styles['plus'])} aria-label="증가">
+          <Image src={plusIcon} alt="" width={32} height={32} />
+        </button>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import Navigation from '@/components/@layout/Navigation';
 import PwaRegistrar from '@/components/PwaRegistrar';
+import { SoundProvider } from '@/lib/context/sound';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ddangkong.suulab.xyz'),
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     default: '심심풀이 땅콩',
     template: '%s | 심심풀이 땅콩',
   },
-  description: '커피내기, 이름 룰렛, 폭탄 돌리기, 랜덤 팀 나누기를 한곳에서 즐기는 복불복 게임 앱.',
+  description: '커피내기, 운명의 돌림판, 폭탄 돌리기, 랜덤 팀 나누기를 한곳에서 즐기는 복불복 게임 앱.',
   applicationName: '심심풀이 땅콩',
   manifest: '/manifest.json',
   icons: {
@@ -51,9 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body>
-        <PwaRegistrar />
-        <Navigation />
-        <main className="main">{children}</main>
+        <SoundProvider>
+          <PwaRegistrar />
+          <Navigation />
+          <main className="main">{children}</main>
+        </SoundProvider>
       </body>
     </html>
   );

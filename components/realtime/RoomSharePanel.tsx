@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import MainButton from '@/components/button/MainButton';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
 import clsx from 'clsx';
+import MainButton from '@/components/button/MainButton';
 import { RealtimeGameType } from '@/lib/realtime/rooms';
+import { supabase } from '@/lib/supabase/client';
 
 interface RoomSharePanelProps {
   gameType: RealtimeGameType;
@@ -43,12 +43,12 @@ export default function RoomSharePanel({
   const [inputRoomId, setInputRoomId] = useState('');
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const router = useRouter();
+
   const gameLabel = useMemo(() => getGameLabel(gameType), [gameType]);
-  const floatingPanelClass = clsx(
-    'z-[1001] overflow-hidden rounded-2xl border border-chocolate/20 bg-white/95 shadow-xl backdrop-blur-sm transition-[width,height,padding] duration-300 ease-out',
-    'fixed bottom-4 right-4 mb-0 w-full max-w-xs',
-    isCollapsed ? 'h-11 w-[76px] px-2 py-1.5' : 'w-64 p-4'
-  );
+  const hasRoom = Boolean(roomId);
+  const triggerLabel = hasRoom ? '방 정보' : '방 만들기';
+
+  const floatingPanelClass = 'fixed bottom-4 right-4 z-[1001] flex justify-end';
 
   const parseRoomLock = (value: string | null): { roomId?: string } | null => {
     if (!value) return null;
@@ -75,16 +75,17 @@ export default function RoomSharePanel({
   };
 
   const handleLeave = () => {
-    if (confirm('정말 방을 나가시겠습니까?')) {
-      const current = new URL(window.location.href);
-      current.searchParams.delete('roomId');
-      router.push(current.pathname);
-    }
+    if (!window.confirm('현재 방에서 나갈까요?')) return;
+
+    const current = new URL(window.location.href);
+    current.searchParams.delete('roomId');
+    router.push(current.pathname);
   };
 
-  const handleJoin = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoin = (event: FormEvent) => {
+    event.preventDefault();
     if (!inputRoomId.trim()) return;
+
     const current = new URL(window.location.href);
     current.searchParams.set('roomId', inputRoomId.trim());
     router.push(current.toString());
@@ -110,7 +111,7 @@ export default function RoomSharePanel({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [roomId, localActor, hasConfig]);
+  }, [hasConfig, localActor, roomId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -118,15 +119,12 @@ export default function RoomSharePanel({
     if (!localActor || localActor === 'guest') return;
 
     const lockKey = `active-room:${gameType}:${localActor}`;
-    const lockValue = JSON.stringify({ roomId, updatedAt: Date.now() });
-
-    window.localStorage.setItem(lockKey, lockValue);
+    window.localStorage.setItem(lockKey, JSON.stringify({ roomId, updatedAt: Date.now() }));
 
     const onStorage = (event: StorageEvent) => {
       if (event.key !== lockKey) return;
       const nextLock = parseRoomLock(event.newValue);
 
-      // 같은 게임에서 다른 방이 활성화되면 현재 탭은 기존 방에서 자동 퇴장
       if (nextLock?.roomId && nextLock.roomId !== roomId) {
         const current = new URL(window.location.href);
         current.searchParams.delete('roomId');
@@ -145,177 +143,125 @@ export default function RoomSharePanel({
     };
   }, [gameType, localActor, roomId, router]);
 
-  if (!roomId) {
-    if (preferFloatingEntry) {
+  const renderEntryContent = () => {
+    if (!hasConfig) {
       return (
-        <div className={floatingPanelClass}>
-          {isCollapsed ? (
-            <button
-              onClick={() => setIsCollapsed(false)}
-              className="w-full h-full flex items-center justify-center text-[11px] font-semibold text-chocolate hover:bg-chocolate/5 rounded-lg transition-colors"
-              title="방 정보 펼치기"
-            >
-              방 정보
-            </button>
-          ) : (
-            <div className="text-xs relative">
-              <button
-                onClick={() => setIsCollapsed(true)}
-                className="absolute -top-1 -right-1 p-2 text-gray-400 hover:text-chocolate transition-colors"
-              >
-                닫기
-              </button>
-
-              <div className="pr-10 mb-3">
-                <p className="font-bold text-sm text-chocolate">{gameLabel} 실시간 공유</p>
-              </div>
-
-              {hasConfig ? (
-                <>
-                  <MainButton className="mb-3" variant="outlined" color="chocolate" onClick={onCreateRoom}>
-                    방 만들기
-                  </MainButton>
-
-                  {isJoinOpen ? (
-                    <form onSubmit={handleJoin} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={inputRoomId}
-                        onChange={e => setInputRoomId(e.target.value)}
-                        placeholder="방 ID 입력"
-                        className="flex-1 px-3 py-2 text-xs border border-chocolate/30 rounded-lg outline-none focus:border-chocolate"
-                      />
-                      <button type="submit" className="px-3 py-2 text-xs bg-chocolate text-white rounded-lg">
-                        참여
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsJoinOpen(false)}
-                        className="px-2 py-2 text-xs text-gray-400"
-                      >
-                        닫기
-                      </button>
-                    </form>
-                  ) : (
-                    <button
-                      onClick={() => setIsJoinOpen(true)}
-                      className="text-[10px] text-chocolate/60 underline underline-offset-2 hover:text-chocolate"
-                    >
-                      기존 방 ID로 참여하기
-                    </button>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-[11px] leading-5 text-amber-800">
-                  실시간 방 기능을 쓰려면 Supabase 공개 환경변수 설정이 필요합니다.
-                </div>
-              )}
-            </div>
-          )}
+        <div className="rounded-xl border border-chocolate07 px-3 py-3 text-sm leading-6 text-chocolate07">
+          실시간 방 기능을 쓰려면 Supabase 설정이 필요합니다.
         </div>
       );
     }
 
     return (
-      <div className="px-4 pt-4 flex flex-col gap-2 max-w-[280px] m-auto">
-        {hasConfig ? (
-          <>
-            <MainButton variant="outlined" color="chocolate" onClick={onCreateRoom}>
-              {gameLabel} 실시간 공유
-            </MainButton>
+      <>
+        <div className="pr-8">
+          <p className="text-base font-bold text-chocolate07">{gameLabel}</p>
+          <p className="mt-1 text-sm text-chocolate06">친구들과 바로 공유할 방을 만들 수 있어요.</p>
+        </div>
 
-            {isJoinOpen ? (
-              <form onSubmit={handleJoin} className="flex gap-2">
-                <input
-                  type="text"
-                  value={inputRoomId}
-                  onChange={e => setInputRoomId(e.target.value)}
-                  placeholder="방 ID 입력"
-                  className="flex-1 px-3 py-2 text-xs border border-chocolate/30 rounded-lg outline-none focus:border-chocolate"
-                />
-                <button type="submit" className="px-3 py-2 text-xs bg-chocolate text-white rounded-lg">
-                  참여
-                </button>
-                <button type="button" onClick={() => setIsJoinOpen(false)} className="px-2 py-2 text-xs text-gray-400">
-                  닫기
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={() => setIsJoinOpen(true)}
-                className="text-[10px] text-chocolate/60 underline underline-offset-2 hover:text-chocolate"
-              >
-                기존 방 ID로 참여하기
-              </button>
-            )}
-          </>
+        <MainButton className="mt-4" variant="outlined" color="chocolate" onClick={onCreateRoom}>
+          방 만들기
+        </MainButton>
+
+        {isJoinOpen ? (
+          <form onSubmit={handleJoin} className="mt-3 flex gap-2">
+            <input
+              type="text"
+              value={inputRoomId}
+              onChange={event => setInputRoomId(event.target.value)}
+              placeholder="방 ID 입력"
+              className="flex-1 rounded-lg border border-chocolate07 px-3 py-2 text-sm outline-none focus:border-chocolate07"
+            />
+            <button type="submit" className="rounded-lg bg-chocolate07 px-3 py-2 text-sm font-semibold text-white">
+              참여
+            </button>
+          </form>
         ) : (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
-            실시간 방 기능을 쓰려면 Supabase 공개 환경변수 설정이 필요합니다.
-          </div>
+          <button
+            onClick={() => setIsJoinOpen(true)}
+            className="mt-3 text-sm font-medium text-chocolate06 underline underline-offset-2"
+          >
+            기존 방 ID로 참여하기
+          </button>
         )}
-      </div>
+      </>
     );
+  };
+
+  const renderRoomContent = () => (
+    <>
+      <div className="flex items-start justify-between gap-3 pr-7">
+        <div className="min-w-0">
+          <p className="truncate text-base font-bold text-chocolate07">{roomName || `${gameLabel} 방`}</p>
+          <p className="mt-1 text-sm text-chocolate06">ID: {roomId?.slice(0, 8)}...</p>
+        </div>
+        <button
+          onClick={handleLeave}
+          className="shrink-0 text-sm font-medium text-chocolate06 underline underline-offset-2"
+        >
+          나가기
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-2 border-b border-chocolate07/20 pb-4 text-sm text-chocolate06">
+        <p className="flex justify-between gap-3">
+          <span>최근 조작</span>
+          <span className="truncate font-semibold text-chocolate07">{lastActor?.slice(0, 10) ?? '-'}</span>
+        </p>
+        <p className="flex justify-between gap-3">
+          <span>접속 인원</span>
+          <span className="font-semibold text-chocolate07">
+            {presenceCount}
+            {maxCapacity ? ` / ${maxCapacity}` : ''}명
+          </span>
+        </p>
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-1 text-sm text-chocolate06">방 ID</p>
+        <button
+          type="button"
+          className="w-full rounded-lg border border-chocolate07 px-3 py-2 text-left text-sm text-chocolate07"
+          onClick={() => {
+            if (!roomId) return;
+            void navigator.clipboard.writeText(roomId);
+          }}
+        >
+          {roomId}
+        </button>
+      </div>
+
+      <MainButton className="mt-4" variant="outlined" color="chocolate" onClick={handleCopy}>
+        {copied ? '링크 복사 완료' : '방 링크 공유'}
+      </MainButton>
+    </>
+  );
+
+  if (!hasRoom && !preferFloatingEntry) {
+    return <div className="mx-auto flex max-w-[280px] flex-col gap-3 px-4 pt-4">{renderEntryContent()}</div>;
   }
 
   return (
     <div className={floatingPanelClass}>
       {isCollapsed ? (
         <button
+          type="button"
           onClick={() => setIsCollapsed(false)}
-          className="w-full h-full flex items-center justify-center text-[11px] font-semibold text-chocolate hover:bg-chocolate/5 rounded-lg transition-colors"
-          title="방 정보 펼치기"
+          className="ml-auto flex h-12 w-[96px] items-center justify-center rounded-2xl border border-chocolate07 bg-white px-2 text-sm font-semibold text-chocolate07 shadow-sm transition-colors hover:bg-chocolate07 hover:text-white"
+          title={triggerLabel}
         >
-          방 정보
+          {triggerLabel}
         </button>
       ) : (
-        <div className="text-xs relative">
+        <div className="relative rounded-2xl border border-chocolate07 bg-white p-4 text-sm shadow-lg transition-all duration-200 ease-out animate-[fade-in_180ms_ease-out]">
           <button
+            type="button"
             onClick={() => setIsCollapsed(true)}
-            className="absolute -top-1 -right-1 p-2 text-gray-400 hover:text-chocolate transition-colors"
+            className="absolute -right-1 -top-1 p-2 text-sm text-chocolate06 transition-colors hover:text-chocolate07"
           >
             닫기
           </button>
-
-          <div className="flex items-start justify-between pr-10">
-            <div>
-              <p className="font-bold text-sm text-chocolate truncate max-w-[140px]">{roomName || '연결된 방'}</p>
-              <p className="text-[10px] text-gray-400">ID: {roomId.slice(0, 8)}...</p>
-            </div>
-            <button onClick={handleLeave} className="text-[10px] mt-1 text-gray-400 hover:text-red-500 underline">
-              나가기
-            </button>
-          </div>
-
-          <div className="space-y-1 mb-4 text-gray-600 border-b border-gray-100 pb-3">
-            <p className="flex justify-between">
-              <span>최근 조작:</span>
-              <span className="font-medium text-gray-900">{lastActor?.slice(0, 10) ?? '-'}</span>
-            </p>
-            <p className="flex justify-between">
-              <span>접속 인원:</span>
-              <span className="font-bold text-orange-600">
-                {presenceCount} {maxCapacity ? `/ ${maxCapacity}` : ''}명
-              </span>
-            </p>
-          </div>
-
-          <div className="mb-4">
-            <p className="text-[9px] text-gray-400 mb-1">방 ID (클릭하여 복사):</p>
-            <p
-              className="text-[9px] text-gray-500 break-all bg-gray-50 p-1 rounded cursor-pointer hover:bg-gray-100"
-              onClick={() => {
-                void navigator.clipboard.writeText(roomId);
-                alert('방 ID가 복사되었습니다.');
-              }}
-            >
-              {roomId}
-            </p>
-          </div>
-
-          <MainButton variant="outlined" color="chocolate" onClick={handleCopy}>
-            {copied ? '링크 복사됨' : '방 링크 공유'}
-          </MainButton>
+          {hasRoom ? renderRoomContent() : renderEntryContent()}
         </div>
       )}
     </div>

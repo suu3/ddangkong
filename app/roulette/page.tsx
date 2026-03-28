@@ -268,18 +268,7 @@ function CoffeeContent() {
   }, [currentOrderState.total.length, currentStep, isRealtimeEnabled, localResultIndex]);
 
   return (
-    <div className="relative">
-      <RoomSharePanel
-        gameType="roulette"
-        roomId={roomId}
-        localActor={clientActor}
-        hasConfig={hasSupabaseConfig()}
-        preferFloatingEntry
-        onCreateRoom={handleCreateRoom}
-        lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
-        roomName={roomInfo.name}
-        maxCapacity={roomInfo.maxCapacity}
-      />
+    <div className="relative pb-28">
       {renderPrevBtn}
       <RouletteContext.Provider
         value={{
@@ -297,6 +286,17 @@ function CoffeeContent() {
           />
         </Container>
       </RouletteContext.Provider>
+      <RoomSharePanel
+        gameType="roulette"
+        roomId={roomId}
+        localActor={clientActor}
+        hasConfig={hasSupabaseConfig()}
+        preferFloatingEntry
+        onCreateRoom={handleCreateRoom}
+        lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}
+        roomName={roomInfo.name}
+        maxCapacity={roomInfo.maxCapacity}
+      />
     </div>
   );
 }

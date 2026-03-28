@@ -30,6 +30,10 @@
     letter-spacing: -0.02rem;
   }
 
+  &.auto-width {
+    width: auto;
+  }
+
   &.contained {
     background-color: var(--button-primary);
     color: var(--button-secondary);

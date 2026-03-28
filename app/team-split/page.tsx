@@ -1,13 +1,18 @@
 'use client';
 
+import clsx from 'clsx';
+import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MainButton from '@/components/button/MainButton';
+import Tooltip from '@/components/Tooltip';
+import UniqueText from '@/components/UniqueText';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
 import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import teamSplitImage from '@/public/split-team/main.png';
 
 type TeamCount = 2 | 3 | 4;
 
@@ -53,6 +58,7 @@ function TeamSplitPageContent() {
   const [clientActor, setClientActor] = useState('guest');
   const [errorBanner, setErrorBanner] = useState<UiError | null>(null);
   const [membersText, setMembersText] = useState('');
+  const [hasEntered, setHasEntered] = useState(false);
 
   const [localTeamCount, setLocalTeamCount] = useState<TeamCount>(2);
   const [localResult, setLocalResult] = useState<string[][]>([[], []]);
@@ -69,8 +75,8 @@ function TeamSplitPageContent() {
   const currentTeamCount = isRealtimeEnabled ? realtimeState.teamCount : localTeamCount;
   const currentResult = isRealtimeEnabled ? realtimeState.result : localResult;
   const currentLastShuffledAt = isRealtimeEnabled ? realtimeState.lastShuffledAt : localLastShuffledAt;
-
   const parsedMembers = useMemo(() => parseAndNormalizeMembers(membersText), [membersText]);
+  const showIntro = !isRealtimeEnabled && !hasEntered;
 
   const applyRealtimeState = useCallback((nextState: TeamSplitState) => {
     realtimeStateRef.current = nextState;
@@ -181,7 +187,7 @@ function TeamSplitPageContent() {
     if (nextMembers.length < MIN_MEMBERS) {
       setErrorBanner({
         code: 'ERR_MIN_MEMBERS',
-        message: '2명 이상 입력해야 팀을 나눌 수 있습니다.',
+        message: '최소 2명 이상 입력해야 팀을 나눌 수 있어요.',
       });
       return;
     }
@@ -253,7 +259,116 @@ function TeamSplitPageContent() {
   }, [isRealtimeEnabled, realtimeState.members]);
 
   return (
-    <div className="relative min-h-screen px-4 pb-12 pt-10">
+    <div className="relative px-4 pb-28 pt-10">
+      {showIntro ? (
+        <section className="relative mx-auto flex max-w-xl flex-col items-center justify-center text-center">
+          <UniqueText Tag="h1" font="sans" size="lg" className="relative mt-4 text-center text-chocolate">
+            랜덤 팀
+            <br />
+            <span className="text-[3.625rem] leading-[103.8%]">나누기</span>
+          </UniqueText>
+          <div className="relative mt-8 w-full max-w-[20rem]">
+            <Image
+              src={teamSplitImage}
+              alt="팀 나누기 메인 일러스트"
+              priority
+              className="relative mx-auto w-full max-w-[18rem] animate-[float_4.8s_ease-in-out_infinite]"
+            />
+          </div>
+          <div className="relative mt-10 w-full max-w-[15rem]">
+            <div className="absolute left-1/2 top-[calc(-100%)] -translate-x-1/2 -translate-y-2">
+              <Tooltip className="animate-bounce" visible>
+                Click !
+              </Tooltip>
+            </div>
+            <MainButton onClick={() => setHasEntered(true)} variant="contained" color="chocolate">
+              시작하기
+            </MainButton>
+          </div>
+        </section>
+      ) : (
+        <div className="mx-auto max-w-xl rounded-[2rem] border border-chocolate07 bg-white p-5 shadow-sm">
+          <UniqueText Tag="h1" font="sans" size="lg" className="text-center text-chocolate">
+            랜덤 팀
+            <br />
+            <span className="text-[3.625rem] leading-[103.8%]">나누기</span>
+          </UniqueText>
+
+          {errorBanner && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {errorBanner.message}
+            </div>
+          )}
+
+          <section className="mt-5 rounded-[1.5rem] border border-chocolate07 bg-white p-4">
+            <h2 className="text-lg font-semibold text-gray-800">참여자 입력</h2>
+            <p className="mt-1 text-xs text-gray-500">한 줄에 한 명씩 입력하세요. 현재 {parsedMembers.length}명</p>
+            <textarea
+              value={membersText}
+              onChange={event => setMembersText(event.target.value)}
+              placeholder={'민지\n현우\n유진\n서준\n도윤\n지우'}
+              className="mt-3 h-48 w-full resize-none rounded-[1.25rem] border border-chocolate07 bg-white p-3 text-sm outline-none transition-colors focus:border-chocolate07"
+            />
+          </section>
+
+          <section className="mt-4 rounded-[1.5rem] border border-chocolate07 bg-white p-4">
+            <h2 className="text-lg font-semibold text-gray-800">옵션</h2>
+            <div className="mt-3 flex gap-2">
+              {[2, 3, 4].map(option => {
+                const selected = currentTeamCount === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => void handleTeamCountChange(option as TeamCount)}
+                    aria-pressed={selected}
+                    className={clsx(
+                      'h-11 flex-1 rounded-full border-2 text-sm font-semibold transition-all duration-150',
+                      selected
+                        ? 'border-chocolate07 bg-chocolate07 text-white'
+                        : 'border-chocolate07 bg-white text-chocolate07'
+                    )}
+                  >
+                    {option}팀
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4">
+              <MainButton variant="contained" color="chocolate" onClick={() => void handleSplit()}>
+                팀 나누기
+              </MainButton>
+            </div>
+          </section>
+
+          <section className="mt-4 rounded-[1.5rem] border border-chocolate07 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-chocolate07">결과</h2>
+              {currentLastShuffledAt && (
+                <p className="text-xs text-chocolate06">
+                  최근 실행 {new Date(currentLastShuffledAt).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {currentResult.map((teamMembers, index) => (
+                <div key={TEAM_LABELS[index]} className="rounded-[1.25rem] border border-chocolate07 bg-white p-3">
+                  <p className="text-sm font-bold text-chocolate07">TEAM {TEAM_LABELS[index]}</p>
+                  <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                    {teamMembers.length === 0 ? (
+                      <li className="text-gray-400">아직 결과가 없어요</li>
+                    ) : (
+                      teamMembers.map(member => <li key={`${TEAM_LABELS[index]}-${member}`}>{member}</li>)
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
       <RoomSharePanel
         gameType="team_split"
         roomId={roomId}
@@ -265,84 +380,6 @@ function TeamSplitPageContent() {
         roomName={roomInfo.name}
         maxCapacity={roomInfo.maxCapacity}
       />
-
-      <div className="mx-auto max-w-xl rounded-2xl border border-chocolate/20 bg-white p-5 shadow-sm">
-        <h1 className="text-center text-3xl font-bold text-chocolate">랜덤 팀 나누기</h1>
-        <p className="mt-2 text-center text-sm text-gray-500">친구 모임에서 바로 쓰는 팀 자동 배정</p>
-
-        {errorBanner && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {errorBanner.message}
-          </div>
-        )}
-
-        <section className="mt-5 rounded-xl border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-800">참가자 입력</h2>
-          <p className="mt-1 text-xs text-gray-500">한 줄에 한 명씩 입력하세요. (현재 {parsedMembers.length}명)</p>
-          <textarea
-            value={membersText}
-            onChange={event => setMembersText(event.target.value)}
-            placeholder={'A\nB\nC\nD\nE\nF'}
-            className="mt-3 h-48 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm outline-none focus:border-chocolate"
-          />
-        </section>
-
-        <section className="mt-4 rounded-xl border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-800">옵션</h2>
-          <div className="mt-3 flex gap-2">
-            {[2, 3, 4].map(option => {
-              const selected = currentTeamCount === option;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => void handleTeamCountChange(option as TeamCount)}
-                  className={[
-                    'h-10 flex-1 rounded-lg border text-sm font-semibold transition-colors',
-                    selected
-                      ? 'border-chocolate bg-chocolate text-white'
-                      : 'border-chocolate/30 bg-white text-chocolate hover:bg-chocolate/5',
-                  ].join(' ')}
-                >
-                  {option}팀
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-4">
-            <MainButton variant="contained" color="chocolate" onClick={() => void handleSplit()}>
-              팀 나누기
-            </MainButton>
-          </div>
-        </section>
-
-        <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-emerald-800">결과</h2>
-            {currentLastShuffledAt && (
-              <p className="text-xs text-emerald-700">
-                최근 실행 {new Date(currentLastShuffledAt).toLocaleTimeString()}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {currentResult.map((teamMembers, index) => (
-              <div key={TEAM_LABELS[index]} className="rounded-lg border border-emerald-200 bg-white p-3">
-                <p className="text-sm font-bold text-emerald-800">TEAM {TEAM_LABELS[index]}</p>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700">
-                  {teamMembers.length === 0 ? (
-                    <li className="text-gray-400">-</li>
-                  ) : (
-                    teamMembers.map(member => <li key={`${TEAM_LABELS[index]}-${member}`}>{member}</li>)
-                  )}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
     </div>
   );
 }

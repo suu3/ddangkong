@@ -7,6 +7,7 @@ interface MainButtonProps {
   variant?: 'outlined' | 'contained' | 'icon';
   color?: 'chocolate';
   disabled?: boolean;
+  fullWidth?: boolean;
   type?: 'button' | 'submit' | 'reset';
   onClick?: MouseEventHandler<HTMLButtonElement>;
   className?: string;
@@ -18,10 +19,12 @@ const MainButton = ({
   children,
   variant = 'contained',
   color = 'chocolate',
+  fullWidth = true,
   type = 'button',
   className,
 }: MainButtonProps) => {
   const btnCls = clsx(styles['button'], styles[variant], styles[color], className, {
+    [styles['auto-width']]: !fullWidth,
     // [styles['disabled']]: disabled,
   });
   return (

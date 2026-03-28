@@ -21,8 +21,8 @@ export default function Main() {
         />
         <GameMenu
           link={ROULETTE_HOME}
-          title="이름 룰렛"
-          image={<Image src={rouletteLogo} width={110} height={120} alt="이름 룰렛" />}
+          title="운명의 돌림판"
+          image={<Image src={rouletteLogo} width={110} height={120} alt="운명의 돌림판" />}
         />
         <GameMenu
           link={HOT_POTATO_HOME}

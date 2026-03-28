@@ -26,3 +26,7 @@
   height: 100%;
   max-width: var(--global-max-width);
 }
+
+.nav-spacer {
+  flex: 1;
+}

@@ -6,9 +6,7 @@ import BubbleContainer from '@/components/BubbleContainer';
 import MainButton from '@/components/button/MainButton';
 import UpDownButton from '@/components/button/UpDownButton';
 import UniqueText from '@/components/UniqueText';
-import AudioPlayer from '@/components/AudioPlayer';
 import { CoffeeContext } from '@/lib/context/coffee';
-import usePlayAudio from '@/lib/hooks/usePlayAudio';
 
 import baristarImage from '@/public/coffee/baristar.svg';
 import steam1 from '@/public/coffee/steam-1.svg';
@@ -24,18 +22,11 @@ interface OrderProps {
 }
 
 export default function Order({ handleStep, state }: OrderProps) {
-  const { allMuteState, orderState, handleOrder } = useContext(CoffeeContext);
+  const { orderState, handleOrder } = useContext(CoffeeContext);
   const { boom, total } = orderState;
-  const { playerRef, playSound, pauseSound } = usePlayAudio();
-
-  const componseSoundAndClick = (callback: () => void) => {
-    playSound(playerRef?.current?.audio?.current);
-    callback();
-  };
 
   return (
     <Fragment>
-      <AudioPlayer muted={allMuteState.isAllMuted} src="/sound/click.mp3" ref={playerRef} />
       <BubbleContainer width={234} height={62} className="mt-10 mx-auto ">
         <UniqueText Tag="span" size="md" font="uhbee" className="absolute">
           커피를 마실 사람은 몇 명인가요?
@@ -71,8 +62,8 @@ export default function Order({ handleStep, state }: OrderProps) {
             총 인원 :
           </UniqueText>
           <UpDownButton
-            handleIncrease={() => componseSoundAndClick(() => handleOrder('INCREASE_TOTAL'))}
-            handleDecrease={() => componseSoundAndClick(() => handleOrder('DECREASE_TOTAL'))}
+            handleIncrease={() => handleOrder('INCREASE_TOTAL')}
+            handleDecrease={() => handleOrder('DECREASE_TOTAL')}
             count={total}
           />
         </div>
@@ -82,8 +73,8 @@ export default function Order({ handleStep, state }: OrderProps) {
             꽝 :
           </UniqueText>
           <UpDownButton
-            handleIncrease={() => componseSoundAndClick(() => handleOrder('INCREASE_BOOM'))}
-            handleDecrease={() => componseSoundAndClick(() => handleOrder('DECREASE_BOOM'))}
+            handleIncrease={() => handleOrder('INCREASE_BOOM')}
+            handleDecrease={() => handleOrder('DECREASE_BOOM')}
             count={boom}
           />
         </div>
