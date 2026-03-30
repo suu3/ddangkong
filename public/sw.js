@@ -1,4 +1,4 @@
-const VERSION = 'ddangkong-v1';
+const VERSION = 'ddangkong-v2';
 const SHELL_CACHE = `shell-${VERSION}`;
 const RUNTIME_CACHE = `runtime-${VERSION}`;
 const STATIC_CACHE = `static-${VERSION}`;
@@ -76,10 +76,11 @@ async function handleNavigationRequest(request) {
 async function handleStaticAsset(request) {
   const cachedResponse = await caches.match(request);
   const fetchPromise = fetch(request)
-    .then(response => {
+    .then(async response => {
       if (response.ok) {
-        const cache = caches.open(STATIC_CACHE);
-        cache.then(store => store.put(request, response.clone()));
+        const responseForCache = response.clone();
+        const cache = await caches.open(STATIC_CACHE);
+        await cache.put(request, responseForCache);
       }
       return response;
     })

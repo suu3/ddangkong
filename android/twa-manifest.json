@@ -35,7 +35,11 @@
   "fullScopeUrl": "https://ddangkong.suulab.xyz/",
   "minSdkVersion": 21,
   "orientation": "portrait",
-  "fingerprints": [],
+  "fingerprints": [
+    {
+      "value": "B9:A4:83:A9:D8:94:7D:BB:82:9C:A4:EF:B4:0C:7E:A0:7B:1F:9D:12:27:9F:85:E5:70:6C:96:4F:DC:0E:08:8C"
+    }
+  ],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],
