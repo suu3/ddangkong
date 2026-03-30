@@ -54,7 +54,7 @@ const games = [
       <Image src={teamSplitLogo} width={96} height={96} alt="랜덤 팀 나누기" className="h-24 w-24 object-contain" />
     ),
     badges: [
-      { label: '2인 이상', tone: 'rose' as const },
+      { label: '1인 가능', tone: 'blue' as const },
       { label: '실시간 공유 가능', tone: 'amber' as const },
     ],
     description: '참여 인원을 입력하면 팀을 빠르게 랜덤 배정해 줘서 게임, 행사, 조별 활동 전에 바로 쓰기 좋아요.',
