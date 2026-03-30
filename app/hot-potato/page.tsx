@@ -711,9 +711,6 @@ function HotPotatoPageContent() {
             <br />
             <span className="text-[3.625rem] leading-[103.8%]">돌리기</span>
           </UniqueText>
-          <p className="relative mt-4 max-w-[18rem] text-sm leading-6 text-chocolate/70">
-            타이머가 끝나기 전에 폭탄을 넘기고 마지막까지 살아남는 사람을 가려보세요!
-          </p>
           <div className="relative mt-8 w-full max-w-[20rem]">
             <Image
               src="/hot-potato/bomb.png"
