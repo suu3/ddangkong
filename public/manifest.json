@@ -8,7 +8,7 @@
   "start_url": "/",
   "name": "심심풀이 땅콩 - 친구와 함께 즐기는 복불복 게임",
   "short_name": "심심풀이 땅콩",
-  "description": "커피내기, 운명의 돌림판, 폭탄 돌리기, 랜덤 팀 나누기를 한곳에서 즐기는 복불복 게임 앱",
+  "description": "커피내기, 운명의 돌림판, 폭탄 돌리기, 랜덤 팀 나누기를 한곳에서 즐기는 복불복 게임 앱.",
   "categories": ["games", "entertainment", "social"],
   "prefer_related_applications": false,
   "icons": [
@@ -16,17 +16,33 @@
       "src": "/logos/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/logos/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png"
+      "purpose": "any"
     },
     {
       "src": "/logos/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/logos/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-desktop-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "심심풀이 땅콩 데스크톱 메인 화면"
+    },
+    {
+      "src": "/screenshots/home-mobile.png",
+      "sizes": "1290x2796",
+      "type": "image/png",
+      "label": "심심풀이 땅콩 모바일 메인 화면"
     }
   ]
 }
