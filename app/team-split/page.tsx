@@ -12,6 +12,7 @@ import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
 import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
+import { useSound } from '@/lib/context/sound';
 import teamSplitImage from '@/public/split-team/main.png';
 
 type TeamCount = 2 | 3 | 4;
@@ -71,6 +72,10 @@ function TeamSplitPageContent() {
     maxCapacity: null,
   });
   const sendStateRef = useRef<((state: TeamSplitState) => void) | null>(null);
+
+  const { isMuted } = useSound();
+  const shuffleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const prevShuffledAtRef = useRef<number | null | undefined>(undefined);
 
   const currentTeamCount = isRealtimeEnabled ? realtimeState.teamCount : localTeamCount;
   const currentResult = isRealtimeEnabled ? realtimeState.result : localResult;
@@ -260,6 +265,32 @@ function TeamSplitPageContent() {
     if (!isRealtimeEnabled) return;
     setMembersText(syncedMembersText);
   }, [isRealtimeEnabled, syncedMembersText]);
+
+  useEffect(() => {
+    const audio = new window.Audio('/sound/shuffling.mp3');
+    audio.preload = 'auto';
+    audio.volume = 0.6;
+    shuffleAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      shuffleAudioRef.current = null;
+    };
+  }, []);
+
+  // 팀이 섞일 때(내가 하든 상대가 하든) 셔플 사운드 재생. 첫 로드/입장 시에는 재생하지 않는다.
+  useEffect(() => {
+    const prev = prevShuffledAtRef.current;
+    prevShuffledAtRef.current = currentLastShuffledAt;
+
+    if (prev === undefined || currentLastShuffledAt === null || currentLastShuffledAt === prev) return;
+    if (isMuted) return;
+
+    const audio = shuffleAudioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => undefined);
+  }, [currentLastShuffledAt, isMuted]);
 
   return (
     <div className="relative px-4 pb-28 pt-10">

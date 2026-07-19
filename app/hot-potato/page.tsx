@@ -12,6 +12,7 @@ import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
 import { supabase } from '@/lib/supabase/client';
+import { useSound } from '@/lib/context/sound';
 
 type EndReason = 'timeout' | 'insufficient_players';
 
@@ -145,6 +146,12 @@ function HotPotatoPageContent() {
 
   const sendStateRef = useRef<((state: HotPotatoRoomState) => void) | null>(null);
   const actionSeqRef = useRef(0);
+
+  const { isMuted } = useSound();
+  const boomAudioRef = useRef<HTMLAudioElement | null>(null);
+  const tickAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastTickSecondRef = useRef<number | null>(null);
+  const prevGameStatusRef = useRef<GameState['status']>('idle');
 
   const applyRoomState = useCallback((nextState: HotPotatoRoomState) => {
     roomStateRef.current = nextState;
@@ -665,6 +672,58 @@ function HotPotatoPageContent() {
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const boom = new window.Audio('/sound/boom.m4a');
+    boom.preload = 'auto';
+    boom.volume = 0.8;
+    boomAudioRef.current = boom;
+
+    const tick = new window.Audio('/sound/tick.m4a');
+    tick.preload = 'auto';
+    tick.volume = 0.55;
+    tickAudioRef.current = tick;
+
+    return () => {
+      boom.pause();
+      tick.pause();
+      boomAudioRef.current = null;
+      tickAudioRef.current = null;
+    };
+  }, []);
+
+  // 타이머 종료로 라운드가 끝나면 폭발음 재생
+  useEffect(() => {
+    const prevStatus = prevGameStatusRef.current;
+    prevGameStatusRef.current = roomState.game.status;
+
+    if (isMuted) return;
+    if (prevStatus === 'ended' || roomState.game.status !== 'ended') return;
+    if (roomState.game.reason !== 'timeout') return;
+
+    const boom = boomAudioRef.current;
+    if (!boom) return;
+    boom.currentTime = 0;
+    void boom.play().catch(() => undefined);
+  }, [isMuted, roomState.game.reason, roomState.game.status]);
+
+  // 마지막 10초 카운트다운 틱 (1초에 한 번)
+  useEffect(() => {
+    if (roomState.game.status !== 'running' || isMuted) {
+      lastTickSecondRef.current = null;
+      return;
+    }
+    if (timerRemainingMs <= 0 || timerRemainingMs > 10_000) return;
+
+    const second = Math.ceil(timerRemainingMs / 1000);
+    if (lastTickSecondRef.current === second) return;
+    lastTickSecondRef.current = second;
+
+    const tick = tickAudioRef.current;
+    if (!tick) return;
+    tick.currentTime = 0;
+    void tick.play().catch(() => undefined);
+  }, [isMuted, roomState.game.status, timerRemainingMs]);
 
   useEffect(() => {
     if (!roomId) return;
