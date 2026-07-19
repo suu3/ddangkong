@@ -49,27 +49,21 @@ function CoffeeResultContent() {
           className="absolute w-full h-full"
           src={coffeeImage}
           priority
-          alt="?ㅻ쭩??而ㅽ뵾"
+          alt="실망한 커피"
           width={296}
           height={386}
         />
-        <Image
-          className="absolute bottom-0 animate-bounce"
-          width={97}
-          height={136}
-          src={walletImage}
-          alt="吏媛?而ㅽ뵾"
-        />
+        <Image className="absolute bottom-0 animate-bounce" width={97} height={136} src={walletImage} alt="지갑 커피" />
       </div>
       <div className="flex m-auto justify-evenly">
         <MainButton variant="icon" onClick={() => router.push(COFFEE_HOME)}>
-          <Image src={refreshIcon} className="w-4 h-4" width={48} height={48} alt="泥섏쓬?쇰줈 ?뚯븘媛湲?踰꾪듉" />
+          <Image src={refreshIcon} className="w-4 h-4" width={48} height={48} alt="처음으로 돌아가기 버튼" />
         </MainButton>
         <MainButton variant="icon" onClick={handleDownload}>
-          <Image src={downloadIcon} className="w-4 h-4" width={48} height={48} alt="?대?吏 ??ν븯湲?踰꾪듉" />
+          <Image src={downloadIcon} className="w-4 h-4" width={48} height={48} alt="이미지 저장하기 버튼" />
         </MainButton>
         <MainButton variant="icon" onClick={copyCurrentURL}>
-          <Image src={linkIcon} className="w-4 h-4" width={48} height={48} alt="留곹겕 蹂듭궗 踰꾪듉" />
+          <Image src={linkIcon} className="w-4 h-4" width={48} height={48} alt="링크 복사 버튼" />
         </MainButton>
       </div>
     </div>
