@@ -30,6 +30,17 @@ interface CoffeeGameState {
   selections: Record<string, number | null>; // actorId -> cardIndex
 }
 
+type RealtimeDraftState = Omit<CoffeeGameState, 'revision' | 'lastActor' | 'selections'>;
+
+const INITIAL_GAME_STATE: CoffeeGameState = {
+  step: 0,
+  orderState: initialCoffeeState,
+  result: null,
+  revision: 0,
+  lastActor: null,
+  selections: {},
+};
+
 function CoffeeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,14 +51,8 @@ function CoffeeContent() {
   const [step, Container, handleStep] = useStep(0);
   const [clientActor, setClientActor] = React.useState('guest');
   const [orderState, orderDispatch] = useReducer(coffeeReducer, initialCoffeeState);
-  const [realtimeState, setRealtimeState] = React.useState<CoffeeGameState>({
-    step: 0,
-    orderState: initialCoffeeState,
-    result: null,
-    revision: 0,
-    lastActor: null,
-    selections: {},
-  });
+  const [realtimeState, setRealtimeState] = React.useState<CoffeeGameState>(INITIAL_GAME_STATE);
+  const realtimeStateRef = React.useRef<CoffeeGameState>(INITIAL_GAME_STATE);
   const [roomInfo, setRoomInfo] = React.useState<{ name: string | null; maxCapacity: number | null }>({
     name: null,
     maxCapacity: null,
@@ -64,19 +69,24 @@ function CoffeeContent() {
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
   const allMuteState = React.useMemo(() => ({ isAllMuted: isMuted }), [isMuted]);
 
+  const applyRealtimeState = useCallback((nextState: CoffeeGameState) => {
+    realtimeStateRef.current = nextState;
+    setRealtimeState(nextState);
+  }, []);
+
   const pushRealtimeState = useCallback(
-    async (nextState: Omit<CoffeeGameState, 'revision' | 'lastActor' | 'selections'>) => {
+    async (makeNextState: (currentState: CoffeeGameState) => RealtimeDraftState) => {
       if (!roomId) return;
 
-      const previousState = realtimeState;
+      const previousState = realtimeStateRef.current;
       const optimisticState: CoffeeGameState = {
-        ...nextState,
+        ...makeNextState(previousState),
         selections: previousState.selections,
         revision: previousState.revision + 1,
         lastActor: clientActor,
       };
 
-      setRealtimeState(optimisticState);
+      applyRealtimeState(optimisticState);
       sendStateRef.current?.(optimisticState);
 
       try {
@@ -84,18 +94,35 @@ function CoffeeContent() {
       } catch (error) {
         if (error instanceof Error && error.message.includes('Realtime conflict')) {
           const latest = await getRoom<CoffeeGameState>(roomId);
-          if (latest) {
-            setRealtimeState(latest.game_state);
-          } else {
-            setRealtimeState(previousState);
+          if (!latest) {
+            applyRealtimeState(previousState);
+            return;
+          }
+
+          const latestState = latest.game_state;
+          const retriedState: CoffeeGameState = {
+            ...makeNextState(latestState),
+            selections: latestState.selections,
+            revision: latestState.revision + 1,
+            lastActor: clientActor,
+          };
+
+          applyRealtimeState(retriedState);
+          sendStateRef.current?.(retriedState);
+
+          try {
+            await updateRoomState(roomId, retriedState, latestState.revision);
+          } catch (retryError) {
+            applyRealtimeState(latestState);
+            console.error('Failed to retry realtime state update', retryError);
           }
           return;
         }
-        setRealtimeState(previousState);
-        throw error;
+        applyRealtimeState(previousState);
+        console.error('Failed to update realtime state', error);
       }
     },
-    [clientActor, realtimeState, roomId]
+    [applyRealtimeState, clientActor, roomId]
   );
 
   const handleCardSelect = useCallback(
@@ -113,12 +140,11 @@ function CoffeeContent() {
 
   const handleOrder = (type: CoffeeActionType) => {
     if (isRealtimeEnabled) {
-      const nextOrderState = coffeeReducer(currentOrderState, { type });
-      void pushRealtimeState({
-        step: currentStep,
-        orderState: nextOrderState,
+      void pushRealtimeState(currentState => ({
+        step: currentState.step,
+        orderState: coffeeReducer(currentState.orderState, { type }),
         result: null,
-      });
+      }));
       return;
     }
 
@@ -127,12 +153,11 @@ function CoffeeContent() {
 
   const handleStepWithSync = (type: 'next' | 'prev') => {
     if (isRealtimeEnabled) {
-      const nextStep = type === 'next' ? currentStep + 1 : Math.max(0, currentStep - 1);
-      void pushRealtimeState({
-        step: nextStep,
-        orderState: currentOrderState,
-        result: type === 'prev' ? null : realtimeState.result,
-      });
+      void pushRealtimeState(currentState => ({
+        step: type === 'next' ? currentState.step + 1 : Math.max(0, currentState.step - 1),
+        orderState: currentState.orderState,
+        result: type === 'prev' ? null : currentState.result,
+      }));
       return;
     }
 
@@ -158,14 +183,7 @@ function CoffeeContent() {
   );
 
   const handleCreateRoom = async () => {
-    const state: CoffeeGameState = {
-      step: 0,
-      orderState: initialCoffeeState,
-      result: null,
-      revision: 0,
-      lastActor: clientActor,
-      selections: {},
-    };
+    const state: CoffeeGameState = { ...INITIAL_GAME_STATE, lastActor: clientActor };
     const room = await createRoom('coffee', state);
     router.push(`/coffee?roomId=${room.id}`);
   };
@@ -190,7 +208,7 @@ function CoffeeContent() {
 
     getRoom<CoffeeGameState>(roomId).then(room => {
       if (!mounted || !room) return;
-      setRealtimeState(room.game_state);
+      applyRealtimeState(room.game_state);
       setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
 
@@ -198,7 +216,7 @@ function CoffeeContent() {
       roomId,
       onState: state => {
         if (!mounted) return;
-        setRealtimeState(state);
+        applyRealtimeState(state);
       },
     });
 
@@ -209,19 +227,18 @@ function CoffeeContent() {
       unsubscribe();
       sendStateRef.current = null;
     };
-  }, [roomId]);
+  }, [applyRealtimeState, roomId]);
 
   useEffect(() => {
     if (!isRealtimeEnabled) return;
     if (currentStep !== 3 || realtimeState.result) return;
 
-    const result = getLottery(currentOrderState.total, currentOrderState.boom).join(',');
-    void pushRealtimeState({
-      step: currentStep,
-      orderState: currentOrderState,
-      result,
-    });
-  }, [currentStep, currentOrderState, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
+    void pushRealtimeState(currentState => ({
+      step: currentState.step,
+      orderState: currentState.orderState,
+      result: currentState.result ?? getLottery(currentState.orderState.total, currentState.orderState.boom).join(','),
+    }));
+  }, [currentStep, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
 
   useEffect(() => {
     if (!roomId || !isRealtimeEnabled) return;

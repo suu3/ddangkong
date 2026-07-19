@@ -27,6 +27,10 @@ lib/supabase/          # client.ts, env.ts (hasSupabaseConfig)
 `.env`에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 **없어도 로컬(비실시간) 모드로 모든 게임이 동작해야 한다.** 실시간 방 공유만 비활성화됨.
 
+실시간 기능을 로컬에서 테스트할 때는 `node scripts/supabase-mock.js`로 목 서버(54321)를 띄우고
+`.env`를 `http://localhost:54321`로 지정한다 (이 머신은 Docker 미지원이라 로컬 Supabase 불가).
+스키마/RLS는 `docs/supabase-rls-guide.md` 참고.
+
 ## 컨벤션
 
 - 모든 페이지/컴포넌트는 `'use client'` 클라이언트 컴포넌트. 서버 컴포넌트 도입하지 않는다.

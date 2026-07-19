@@ -253,10 +253,13 @@ function TeamSplitPageContent() {
     };
   }, [applyRealtimeState, roomId]);
 
+  // 배열 identity가 아니라 내용이 바뀔 때만 입력창을 동기화한다.
+  // (모든 상태 수신마다 덮어쓰면 아직 저장 전인 로컬 입력이 지워진다)
+  const syncedMembersText = realtimeState.members.join('\n');
   useEffect(() => {
     if (!isRealtimeEnabled) return;
-    setMembersText(realtimeState.members.join('\n'));
-  }, [isRealtimeEnabled, realtimeState.members]);
+    setMembersText(syncedMembersText);
+  }, [isRealtimeEnabled, syncedMembersText]);
 
   return (
     <div className="relative px-4 pb-28 pt-10">

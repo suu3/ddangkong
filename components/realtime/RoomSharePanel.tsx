@@ -324,7 +324,7 @@ export default function RoomSharePanel({
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-full border border-chocolate07 bg-white px-4 py-2 text-sm font-medium text-chocolate07"
+                  className="shrink-0 whitespace-nowrap rounded-full border border-chocolate07 bg-white px-4 py-2 text-sm font-medium text-chocolate07"
                 >
                   닫기
                 </button>
