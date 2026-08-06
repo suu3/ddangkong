@@ -4,8 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import MainButton from '@/components/button/MainButton';
-import { buildActorAliasMap, getActorAlias } from '@/lib/realtime/actorAlias';
-import { consumeActorRotationNotice } from '@/lib/realtime/clientActor';
+import { buildActorAliasMap, consumeActorRotationNotice, getActorAlias } from '@/lib/realtime/clientActor';
 import { assertJoinableRoom, getGameLabel, normalizeRoomId, RealtimeGameType } from '@/lib/realtime/rooms';
 import { supabase } from '@/lib/supabase/client';
 
