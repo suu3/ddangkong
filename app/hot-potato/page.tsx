@@ -7,7 +7,7 @@ import MainButton from '@/components/button/MainButton';
 import Tooltip from '@/components/Tooltip';
 import UniqueText from '@/components/UniqueText';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
-import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
+import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realtime/rooms';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
@@ -73,6 +73,7 @@ type MutateResult = {
 };
 
 const MIN_PLAYERS = 2;
+const DURATION_OPTIONS = [15, 30, 60] as const;
 
 const DEFAULT_CONFIG: GameConfig = {
   durationSec: 30,
@@ -90,6 +91,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   ERR_ROUND_MISMATCH: '라운드가 변경되었습니다. 최신 화면으로 다시 시도하세요.',
   ERR_COOLDOWN: '잠시 후 다시 시도하세요.',
   ERR_ALREADY_ENDED: '이미 종료된 라운드입니다.',
+  ERR_NOT_READY: '모두 준비되면 시작할 수 있습니다.',
+  ERR_ALREADY_RUNNING: '이미 진행 중인 라운드가 있습니다.',
 };
 
 const buildInitialRoomState = (
@@ -241,10 +244,27 @@ function HotPotatoPageContent() {
     [roomState.game.holderUserId, roomState.players]
   );
 
+  const nicknameByUserId = useMemo(
+    () => new Map(roomState.players.map(player => [player.userId, player.nickname])),
+    [roomState.players]
+  );
+
   const winnerPlayer = useMemo(
     () => roomState.players.find(player => player.userId === roomState.game.winnerUserId) ?? null,
     [roomState.game.winnerUserId, roomState.players]
   );
+
+  /**
+   * 라운드 종료 판정은 한 명만 수행해야 결과가 한 번만 기록됩니다.
+   * 기본은 Host이고, Host가 접속을 끊은 경우 접속자 중 actorId가 가장 앞서는 사람이 대신 판정합니다.
+   */
+  const isEndAuthority = useMemo(() => {
+    const connected = connectedActors.length > 0 ? connectedActors : [clientActor];
+    if (connected.includes(roomState.hostId)) return clientActor === roomState.hostId;
+
+    const fallback = [...connected].sort((a, b) => a.localeCompare(b))[0];
+    return clientActor === fallback;
+  }, [clientActor, connectedActors, roomState.hostId]);
 
   const canStart = useMemo(() => {
     if (clientActor !== roomState.hostId) {
@@ -255,8 +275,12 @@ function HotPotatoPageContent() {
       return { ok: false, message: ERROR_MESSAGES.ERR_MIN_PLAYERS };
     }
 
+    if (!effectivePlayers.every(player => player.isReady)) {
+      return { ok: false, message: ERROR_MESSAGES.ERR_NOT_READY };
+    }
+
     return { ok: true, message: '' };
-  }, [clientActor, effectivePlayers.length, roomState.hostId]);
+  }, [clientActor, effectivePlayers, roomState.hostId]);
 
   const cooldownRemainingMs = useMemo(() => {
     const game = roomState.game;
@@ -354,12 +378,20 @@ function HotPotatoPageContent() {
         return errorResult('ERR_NOT_HOST', current);
       }
 
+      if (current.game.status === 'running') {
+        return errorResult('ERR_ALREADY_RUNNING', current);
+      }
+
       const participants = current.players.filter(
         player => !player.isSpectator && isPlayerConnected(player.userId, connectedSet)
       );
 
       if (participants.length < MIN_PLAYERS) {
         return errorResult('ERR_MIN_PLAYERS', current);
+      }
+
+      if (!participants.every(player => player.isReady)) {
+        return errorResult('ERR_NOT_READY', current);
       }
 
       const now = Date.now();
@@ -406,8 +438,9 @@ function HotPotatoPageContent() {
         return errorResult('ERR_NOT_RUNNING', current);
       }
 
+      // 종료 우선 원칙: 타이머가 이미 지났다면 PASS를 반영하지 않고 그대로 종료를 확정합니다.
       if (!game.endsAtMs || now >= game.endsAtMs) {
-        return errorResult('ERR_ALREADY_ENDED', current);
+        return { nextState: endRunningGame(current, 'timeout', game.endsAtMs ?? now) };
       }
 
       if (game.config.hostOnlyPass && clientActor !== current.hostId) {
@@ -460,6 +493,31 @@ function HotPotatoPageContent() {
             lastPassAtMs: now,
             lastHolders: [...game.lastHolders, nextHolder].slice(-20),
             processedActionIds: [...game.processedActionIds, clientActionId].slice(-100),
+          },
+        },
+      };
+    });
+  };
+
+  const handleConfigChange = async (patch: Partial<GameConfig>) => {
+    if (!roomId) return;
+    setErrorBanner(null);
+
+    await pushRoomState(current => {
+      if (clientActor !== current.hostId) {
+        return errorResult('ERR_NOT_HOST', current);
+      }
+
+      if (current.game.status === 'running') {
+        return errorResult('ERR_ALREADY_RUNNING', current);
+      }
+
+      return {
+        nextState: {
+          ...current,
+          game: {
+            ...current.game,
+            config: { ...current.game.config, ...patch },
           },
         },
       };
@@ -544,14 +602,31 @@ function HotPotatoPageContent() {
 
     let mounted = true;
 
-    getRoom<HotPotatoRoomState>(roomId).then(room => {
-      if (!mounted) return;
-      if (room) {
+    getRoom<HotPotatoRoomState>(roomId)
+      .then(room => {
+        if (!mounted) return;
+
+        if (!room || isRoomExpired(room.created_at)) {
+          setErrorBanner({
+            code: 'ERR_ROOM_NOT_FOUND',
+            message: '방을 찾을 수 없거나 만료된 링크예요. 새 방을 만들어 주세요.',
+          });
+          setIsRoomHydrated(true);
+          return;
+        }
+
         applyRoomState(room.game_state);
         setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
-      }
-      setIsRoomHydrated(true);
-    });
+        setIsRoomHydrated(true);
+      })
+      .catch((error: unknown) => {
+        if (!mounted) return;
+        setErrorBanner({
+          code: 'ERR_FETCH_FAILED',
+          message: error instanceof Error ? error.message : '방 정보를 불러오지 못했어요.',
+        });
+        setIsRoomHydrated(true);
+      });
 
     const { unsubscribe, sendState } = subscribeRoomState<HotPotatoRoomState>({
       roomId,
@@ -728,6 +803,8 @@ function HotPotatoPageContent() {
   useEffect(() => {
     if (!roomId) return;
     if (roomState.game.status !== 'running') return;
+    // 종료 판정은 한 명만 수행해 중복 종료/중복 결과 기록을 막습니다.
+    if (!isEndAuthority) return;
 
     if (effectivePlayers.length < MIN_PLAYERS) {
       void pushRoomState(current => {
@@ -750,7 +827,15 @@ function HotPotatoPageContent() {
         nextState: endRunningGame(current, 'timeout', Date.now()),
       };
     });
-  }, [effectivePlayers.length, nowMs, pushRoomState, roomId, roomState.game.endsAtMs, roomState.game.status]);
+  }, [
+    effectivePlayers.length,
+    isEndAuthority,
+    nowMs,
+    pushRoomState,
+    roomId,
+    roomState.game.endsAtMs,
+    roomState.game.status,
+  ]);
 
   const statusText =
     roomState.game.status === 'idle' ? '대기 중' : roomState.game.status === 'running' ? '진행 중' : '종료됨';
@@ -864,6 +949,40 @@ function HotPotatoPageContent() {
                 </MainButton>
               </div>
             )}
+            {roomId && clientActor === roomState.hostId && roomState.game.status !== 'running' && (
+              <div className="mt-4 rounded-lg border border-gray-200 p-3">
+                <p className="text-sm font-semibold text-gray-800">라운드 설정 (진행자)</p>
+                <div className="mt-2 flex gap-2">
+                  {DURATION_OPTIONS.map(option => {
+                    const selected = roomState.game.config.durationSec === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => void handleConfigChange({ durationSec: option })}
+                        className={`h-9 flex-1 rounded-full border text-sm font-semibold transition-colors ${
+                          selected
+                            ? 'border-chocolate bg-chocolate text-white'
+                            : 'border-gray-300 bg-white text-gray-700'
+                        }`}
+                      >
+                        {option}초
+                      </button>
+                    );
+                  })}
+                </div>
+                <label className="mt-3 flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={roomState.game.config.hostOnlyPass}
+                    onChange={event => void handleConfigChange({ hostOnlyPass: event.target.checked })}
+                  />
+                  진행자만 &lsquo;다음 사람&rsquo; 누르기
+                </label>
+              </div>
+            )}
+
             {roomState.game.status !== 'running' && (
               <div className="mt-4">
                 <MainButton variant="contained" color="chocolate" disabled={!canStart.ok} onClick={handleStartGame}>
@@ -934,10 +1053,31 @@ function HotPotatoPageContent() {
               {clientActor === roomState.hostId && (
                 <div className="mt-4">
                   <MainButton variant="contained" color="chocolate" onClick={handleReset}>
-                    Replay / Reset
+                    다시하기
                   </MainButton>
                 </div>
               )}
+            </section>
+          )}
+
+          {roomState.game.history.length > 0 && roomState.game.status !== 'running' && (
+            <section className="mt-5 rounded-xl border border-gray-200 p-4">
+              <h2 className="text-lg font-semibold text-gray-800">지난 라운드</h2>
+              <ul className="mt-3 space-y-2 text-sm">
+                {[...roomState.game.history].reverse().map(entry => (
+                  <li
+                    key={`${entry.roundId}-${entry.endedAtMs}`}
+                    className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
+                  >
+                    <span className="text-gray-800">
+                      {entry.roundId}라운드 · {nicknameByUserId.get(entry.winnerUserId ?? '') ?? '알 수 없음'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {entry.reason === 'insufficient_players' ? '인원 부족' : '타임아웃'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
         </div>

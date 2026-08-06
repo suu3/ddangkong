@@ -4,7 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import MainButton from '@/components/button/MainButton';
-import { RealtimeGameType } from '@/lib/realtime/rooms';
+import { buildActorAliasMap, getActorAlias } from '@/lib/realtime/actorAlias';
+import { consumeActorRotationNotice } from '@/lib/realtime/clientActor';
+import { assertJoinableRoom, getGameLabel, normalizeRoomId, RealtimeGameType } from '@/lib/realtime/rooms';
 import { supabase } from '@/lib/supabase/client';
 
 interface RoomSharePanelProps {
@@ -19,13 +21,6 @@ interface RoomSharePanelProps {
   onCreateRoom: () => Promise<void>;
 }
 
-const getGameLabel = (gameType: RealtimeGameType) => {
-  if (gameType === 'coffee') return '커피내기';
-  if (gameType === 'roulette') return '룰렛';
-  if (gameType === 'hot_potato') return '폭탄 돌리기';
-  return '팀 나누기';
-};
-
 export default function RoomSharePanel({
   gameType,
   roomId,
@@ -38,15 +33,26 @@ export default function RoomSharePanel({
   maxCapacity,
 }: RoomSharePanelProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [createRoomError, setCreateRoomError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [presenceCount, setPresenceCount] = useState(1);
+  const [presenceActors, setPresenceActors] = useState<string[]>([]);
   const [inputRoomId, setInputRoomId] = useState('');
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [showActorNotice, setShowActorNotice] = useState(false);
   const router = useRouter();
 
   const gameLabel = useMemo(() => getGameLabel(gameType), [gameType]);
   const hasRoom = Boolean(roomId);
   const triggerLabel = hasRoom ? '방 정보' : '방 만들기';
+
+  const aliasMap = useMemo(
+    () => buildActorAliasMap([...presenceActors, localActor, ...(lastActor ? [lastActor] : [])]),
+    [lastActor, localActor, presenceActors]
+  );
+  const presenceCount = presenceActors.length || 1;
 
   const parseRoomLock = (value: string | null): { roomId?: string } | null => {
     if (!value) return null;
@@ -81,16 +87,54 @@ export default function RoomSharePanel({
     router.push(current.pathname);
   };
 
-  const handleJoin = (event: FormEvent) => {
+  const handleJoin = async (event: FormEvent) => {
     event.preventDefault();
-    if (!inputRoomId.trim()) return;
+    if (isJoiningRoom) return;
+
+    const normalizedRoomId = normalizeRoomId(inputRoomId);
+    if (!normalizedRoomId) {
+      setJoinError('방 ID 형식이 올바르지 않아요. 공유받은 링크나 ID를 그대로 붙여넣어 주세요.');
+      return;
+    }
+
+    setJoinError(null);
+    setIsJoiningRoom(true);
+
+    try {
+      await assertJoinableRoom(normalizedRoomId, gameType);
+    } catch (error) {
+      setJoinError(error instanceof Error ? error.message : '방에 참여하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    } finally {
+      setIsJoiningRoom(false);
+    }
 
     const current = new URL(window.location.href);
-    current.searchParams.set('roomId', inputRoomId.trim());
+    current.searchParams.set('roomId', normalizedRoomId);
     router.push(current.toString());
     setInputRoomId('');
     setIsJoinOpen(false);
     setIsOpen(false);
+    setCreateRoomError(null);
+  };
+
+  const handleCreateRoomClick = async () => {
+    if (isCreatingRoom) return;
+
+    setCreateRoomError(null);
+    setJoinError(null);
+    setIsJoinOpen(false);
+    setIsCreatingRoom(true);
+
+    try {
+      await onCreateRoom();
+    } catch (error) {
+      setCreateRoomError(
+        error instanceof Error ? error.message : '방을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.'
+      );
+    } finally {
+      setIsCreatingRoom(false);
+    }
   };
 
   useEffect(() => {
@@ -126,7 +170,16 @@ export default function RoomSharePanel({
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
-        setPresenceCount(Object.keys(state).length);
+        const actors = new Set<string>();
+
+        Object.values(state).forEach(presences => {
+          const first = (presences as Array<{ actor?: string }>)[0];
+          if (first?.actor) {
+            actors.add(first.actor);
+          }
+        });
+
+        setPresenceActors(Array.from(actors));
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
@@ -169,6 +222,19 @@ export default function RoomSharePanel({
     };
   }, [gameType, localActor, roomId, router]);
 
+  useEffect(() => {
+    if (!hasRoom) return;
+    setCreateRoomError(null);
+    setIsCreatingRoom(false);
+  }, [hasRoom]);
+
+  useEffect(() => {
+    if (!localActor || localActor === 'guest') return;
+    if (!consumeActorRotationNotice()) return;
+
+    setShowActorNotice(true);
+  }, [localActor]);
+
   const renderEntryContent = () => {
     if (!hasConfig) {
       return (
@@ -183,43 +249,68 @@ export default function RoomSharePanel({
         <div className="rounded-[1.75rem] border border-chocolate07/20 bg-[#fffaf4] p-5">
           <p className="text-lg font-bold text-chocolate07">{gameLabel}</p>
           <p className="mt-2 text-sm leading-6 text-chocolate06">
-            친구와 바로 공유할 방을 만들거나, 받은 방 ID로 바로 참여해보세요.
+            친구와 바로 공유할 방을 만들거나, 받은 방 ID로 바로 참여해 보세요.
           </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <MainButton variant="contained" color="chocolate" onClick={onCreateRoom}>
-            방 만들기
+          <MainButton
+            variant="contained"
+            color="chocolate"
+            onClick={() => void handleCreateRoomClick()}
+            disabled={isCreatingRoom}
+          >
+            {isCreatingRoom ? '방 만드는 중...' : '방 만들기'}
           </MainButton>
           <button
             type="button"
-            onClick={() => setIsJoinOpen(prev => !prev)}
+            onClick={() => {
+              setCreateRoomError(null);
+              setIsJoinOpen(prev => !prev);
+            }}
             className="flex h-12 items-center justify-center rounded-2xl border border-chocolate07 bg-white px-4 text-sm font-semibold text-chocolate07 transition-colors hover:bg-[#fff7ec]"
           >
             기존 방 참여하기
           </button>
         </div>
 
+        {createRoomError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+            {createRoomError}
+          </div>
+        ) : null}
+
         {isJoinOpen ? (
-          <form onSubmit={handleJoin} className="rounded-[1.5rem] border border-chocolate07/20 bg-white p-4">
-            <label className="mb-2 block text-sm font-medium text-chocolate06">방 ID 입력</label>
+          <form
+            onSubmit={event => void handleJoin(event)}
+            className="rounded-[1.5rem] border border-chocolate07/20 bg-white p-4"
+          >
+            <label className="mb-2 block text-sm font-medium text-chocolate06">방 ID 또는 링크 입력</label>
             <input
               type="text"
               value={inputRoomId}
-              onChange={event => setInputRoomId(event.target.value)}
-              placeholder="방 ID 입력"
+              onChange={event => {
+                setInputRoomId(event.target.value);
+                setJoinError(null);
+              }}
+              placeholder="방 ID 또는 공유받은 링크"
               className="w-full rounded-xl border border-chocolate07 px-3 py-3 text-sm outline-none focus:border-chocolate07"
             />
+            {joinError ? <p className="mt-2 text-sm leading-6 text-red-700">{joinError}</p> : null}
             <div className="mt-3 flex gap-2">
               <button
                 type="submit"
-                className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chocolate07 px-3 py-2 text-sm font-semibold text-white"
+                disabled={isJoiningRoom}
+                className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chocolate07 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
-                참여
+                {isJoiningRoom ? '확인 중...' : '참여'}
               </button>
               <button
                 type="button"
-                onClick={() => setIsJoinOpen(false)}
+                onClick={() => {
+                  setIsJoinOpen(false);
+                  setJoinError(null);
+                }}
                 className="flex h-11 flex-1 items-center justify-center rounded-xl border border-chocolate07 px-3 py-2 text-sm font-semibold text-chocolate07"
               >
                 닫기
@@ -240,6 +331,7 @@ export default function RoomSharePanel({
             <p className="mt-1 text-sm text-chocolate06">ID: {roomId?.slice(0, 8)}...</p>
           </div>
           <button
+            type="button"
             onClick={handleLeave}
             className="shrink-0 text-sm font-medium text-chocolate06 underline underline-offset-2"
           >
@@ -251,7 +343,9 @@ export default function RoomSharePanel({
       <div className="grid gap-3 rounded-[1.75rem] border border-chocolate07/15 bg-white p-5 text-sm text-chocolate06">
         <p className="flex justify-between gap-3">
           <span>최근 조작</span>
-          <span className="truncate font-semibold text-chocolate07">{lastActor?.slice(0, 10) ?? '-'}</span>
+          <span className="truncate font-semibold text-chocolate07">
+            {getActorAlias(lastActor, aliasMap, localActor)}
+          </span>
         </p>
         <p className="flex justify-between gap-3">
           <span>접속 인원</span>
@@ -260,7 +354,22 @@ export default function RoomSharePanel({
             {maxCapacity ? ` / ${maxCapacity}` : ''}명
           </span>
         </p>
+        {presenceActors.length > 0 ? (
+          <div className="flex flex-wrap gap-2 border-t border-chocolate07/10 pt-3">
+            {presenceActors.map(actor => (
+              <span key={actor} className="rounded-full bg-[#fff3e3] px-3 py-1 text-xs font-semibold text-chocolate07">
+                {getActorAlias(actor, aliasMap, localActor)}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
+
+      {showActorNotice ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+          접속 정보가 만료되어 새 익명 ID가 발급됐어요. 이전에 참여하던 방에서는 다른 사람으로 표시될 수 있어요.
+        </div>
+      ) : null}
 
       <div className="rounded-[1.75rem] border border-chocolate07/15 bg-white p-5">
         <p className="mb-2 text-sm text-chocolate06">방 ID</p>
@@ -294,9 +403,7 @@ export default function RoomSharePanel({
           onClick={() => setIsOpen(true)}
           className={clsx(
             'flex h-9 min-w-[72px] items-center justify-center rounded-md px-2 text-sm font-semibold transition-colors',
-            hasRoom
-              ? 'text-chocolate07 hover:bg-chocolate07/10 hover:text-chocolate06'
-              : 'text-chocolate07 hover:bg-chocolate07/10 hover:text-chocolate06'
+            'text-chocolate07 hover:bg-chocolate07/10 hover:text-chocolate06'
           )}
           title={triggerLabel}
         >
@@ -318,7 +425,7 @@ export default function RoomSharePanel({
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-chocolate06">Room</p>
                   <h2 className="mt-2 text-2xl font-bold text-chocolate07">
-                    {hasRoom ? '방을 공유하거나 관리해보세요' : `${gameLabel} 방을 만들어볼까요?`}
+                    {hasRoom ? '방을 공유하거나 관리해 보세요.' : `${gameLabel} 방을 만들어 볼까요?`}
                   </h2>
                 </div>
                 <button

@@ -10,7 +10,7 @@ import UniqueText from '@/components/UniqueText';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
-import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
+import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realtime/rooms';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
 import { useSound } from '@/lib/context/sound';
 import teamSplitImage from '@/public/split-team/main.png';
@@ -235,11 +235,28 @@ function TeamSplitPageContent() {
 
     let mounted = true;
 
-    getRoom<TeamSplitState>(roomId).then(room => {
-      if (!mounted || !room) return;
-      applyRealtimeState(room.game_state);
-      setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
-    });
+    getRoom<TeamSplitState>(roomId)
+      .then(room => {
+        if (!mounted) return;
+
+        if (!room || isRoomExpired(room.created_at)) {
+          setErrorBanner({
+            code: 'ERR_ROOM_NOT_FOUND',
+            message: '방을 찾을 수 없거나 만료된 링크예요. 새 방을 만들어 주세요.',
+          });
+          return;
+        }
+
+        applyRealtimeState(room.game_state);
+        setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
+      })
+      .catch((error: unknown) => {
+        if (!mounted) return;
+        setErrorBanner({
+          code: 'ERR_FETCH_FAILED',
+          message: error instanceof Error ? error.message : '방 정보를 불러오지 못했어요.',
+        });
+      });
 
     const { unsubscribe, sendState } = subscribeRoomState<TeamSplitState>({
       roomId,
