@@ -1,7 +1,7 @@
 {
   "name": "ddangkong",
   "version": "0.1.0",
-  "packageManager": "pnpm@8.6.9",
+  "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20.9.0"
   },
