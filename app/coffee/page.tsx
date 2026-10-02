@@ -15,8 +15,8 @@ import prevBtnIcon from '@/public/button/button_prev.svg';
 import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realtime/rooms';
 import { COFFEE_HOME } from '@/lib/constants/serviceUrls';
 import { subscribeRoomState } from '@/lib/realtime/channel';
-import { hasSupabaseConfig } from '@/lib/supabase/env';
-import { supabase } from '@/lib/supabase/client';
+import { hasRealtimeConfig } from '@/lib/realtime/env';
+import { subscribePresence, trackPresence } from '@/lib/realtime/connection';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { getLottery } from '@/lib/utils/random';
 import { getServerActor } from '@/lib/realtime/clientActor';
@@ -46,8 +46,8 @@ function CoffeeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
-  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
+  // 실시간 서버 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasRealtimeConfig() ? searchParams.get('roomId') : null;
   const isRealtimeEnabled = Boolean(roomId);
 
   const [step, Container, handleStep] = useStep(0);
@@ -63,8 +63,6 @@ function CoffeeContent() {
     Record<string, { actor: string; cardIndex: number | null }>
   >({});
 
-  const sendStateRef = React.useRef<((state: CoffeeGameState) => void) | null>(null);
-  const presenceChannelRef = React.useRef<any>(null);
   const { isMuted, setMuted } = useSound();
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
@@ -89,7 +87,6 @@ function CoffeeContent() {
       };
 
       applyRealtimeState(optimisticState);
-      sendStateRef.current?.(optimisticState);
 
       try {
         await updateRoomState(roomId, optimisticState, previousState.revision);
@@ -110,7 +107,6 @@ function CoffeeContent() {
           };
 
           applyRealtimeState(retriedState);
-          sendStateRef.current?.(retriedState);
 
           try {
             await updateRoomState(roomId, retriedState, latestState.revision);
@@ -129,15 +125,12 @@ function CoffeeContent() {
 
   const handleCardSelect = useCallback(
     (cardIndex: number | null) => {
-      if (!isRealtimeEnabled || !presenceChannelRef.current) return;
+      if (!roomId) return;
 
       // Presence로 즉시 전파 (Google Docs 스타일 하이라이트용)
-      void presenceChannelRef.current.track({
-        actor: clientActor,
-        cardIndex: cardIndex,
-      });
+      trackPresence(roomId, { actor: clientActor, cardIndex });
     },
-    [clientActor, isRealtimeEnabled]
+    [clientActor, roomId]
   );
 
   const handleOrder = (type: CoffeeActionType) => {
@@ -222,20 +215,19 @@ function CoffeeContent() {
       setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
 
-    const { unsubscribe, sendState } = subscribeRoomState<CoffeeGameState>({
+    const { unsubscribe } = subscribeRoomState<CoffeeGameState>({
       roomId,
       onState: state => {
         if (!mounted) return;
+        // 내 낙관적 업데이트보다 뒤처진(이미 지나간) 상태는 무시한다
+        if (state.revision < realtimeStateRef.current.revision) return;
         applyRealtimeState(state);
       },
     });
 
-    sendStateRef.current = sendState;
-
     return () => {
       mounted = false;
       unsubscribe();
-      sendStateRef.current = null;
     };
   }, [applyRealtimeState, roomId, router]);
 
@@ -251,44 +243,28 @@ function CoffeeContent() {
   }, [currentStep, isRealtimeEnabled, pushRealtimeState, realtimeState.result]);
 
   useEffect(() => {
-    if (!roomId || !isRealtimeEnabled) return;
+    if (!roomId) return;
 
-    let mounted = true;
+    const unsubscribe = subscribePresence(roomId, presence => {
+      const simplified: Record<string, { actor: string; cardIndex: number | null }> = {};
 
-    const channel = supabase.channel(`presence:${roomId}`);
-    presenceChannelRef.current = channel;
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        if (!mounted) return;
-        const state = channel.presenceState();
-        const simplified: Record<string, { actor: string; cardIndex: number | null }> = {};
-
-        Object.entries(state).forEach(([key, presences]) => {
-          const typedPresences = presences as any[];
-          const first = typedPresences[0];
-          if (first) {
-            simplified[key] = {
-              actor: first.actor,
-              cardIndex: first.cardIndex ?? null,
-            };
-          }
-        });
-
-        setActiveSelections(simplified);
-      })
-      .subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ actor: clientActor, cardIndex: null });
-        }
+      Object.values(presence).forEach(meta => {
+        if (typeof meta.actor !== 'string') return;
+        simplified[meta.actor] = {
+          actor: meta.actor,
+          cardIndex: typeof meta.cardIndex === 'number' ? meta.cardIndex : null,
+        };
       });
 
-    return () => {
-      mounted = false;
-      void supabase.removeChannel(channel);
-      presenceChannelRef.current = null;
-    };
-  }, [roomId, isRealtimeEnabled, clientActor]);
+      setActiveSelections(simplified);
+    });
+
+    if (clientActor !== 'guest') {
+      trackPresence(roomId, { actor: clientActor, cardIndex: null });
+    }
+
+    return unsubscribe;
+  }, [roomId, clientActor]);
 
   return (
     <div className="relative pb-28">
@@ -319,7 +295,7 @@ function CoffeeContent() {
         gameType="coffee"
         roomId={roomId}
         localActor={clientActor}
-        hasConfig={hasSupabaseConfig()}
+        hasConfig={hasRealtimeConfig()}
         preferFloatingEntry
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}

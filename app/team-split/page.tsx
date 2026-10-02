@@ -11,7 +11,7 @@ import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
 import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realtime/rooms';
-import { hasSupabaseConfig } from '@/lib/supabase/env';
+import { hasRealtimeConfig } from '@/lib/realtime/env';
 import { useSound } from '@/lib/context/sound';
 import teamSplitImage from '@/public/split-team/main.png';
 
@@ -53,8 +53,8 @@ const INITIAL_STATE = (hostId: string): TeamSplitState => ({
 function TeamSplitPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
-  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
+  // 실시간 서버 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasRealtimeConfig() ? searchParams.get('roomId') : null;
   const isRealtimeEnabled = Boolean(roomId);
 
   const [clientActor, setClientActor] = useState('guest');
@@ -72,7 +72,6 @@ function TeamSplitPageContent() {
     name: null,
     maxCapacity: null,
   });
-  const sendStateRef = useRef<((state: TeamSplitState) => void) | null>(null);
 
   const { isMuted } = useSound();
   const shuffleAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -108,7 +107,6 @@ function TeamSplitPageContent() {
       };
 
       applyRealtimeState(optimisticState);
-      sendStateRef.current?.(optimisticState);
 
       try {
         await updateRoomState(roomId, optimisticState, previous.revision);
@@ -141,7 +139,6 @@ function TeamSplitPageContent() {
         };
 
         applyRealtimeState(retryState);
-        sendStateRef.current?.(retryState);
 
         try {
           await updateRoomState(roomId, retryState, latestState.revision);
@@ -266,20 +263,19 @@ function TeamSplitPageContent() {
         });
       });
 
-    const { unsubscribe, sendState } = subscribeRoomState<TeamSplitState>({
+    const { unsubscribe } = subscribeRoomState<TeamSplitState>({
       roomId,
       onState: state => {
         if (!mounted) return;
+        // 내 낙관적 업데이트보다 뒤처진(이미 지나간) 상태는 무시한다
+        if (state.revision < realtimeStateRef.current.revision) return;
         applyRealtimeState(state);
       },
     });
 
-    sendStateRef.current = sendState;
-
     return () => {
       mounted = false;
       unsubscribe();
-      sendStateRef.current = null;
     };
   }, [applyRealtimeState, roomId]);
 
@@ -432,7 +428,7 @@ function TeamSplitPageContent() {
         gameType="team_split"
         roomId={roomId}
         localActor={clientActor}
-        hasConfig={hasSupabaseConfig()}
+        hasConfig={hasRealtimeConfig()}
         preferFloatingEntry
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}

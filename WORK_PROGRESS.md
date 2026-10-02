@@ -1,5 +1,15 @@
 # 작업 진행상황 (2026-08-06)
 
+## 실시간 서버 Cloudflare 전환 (2026-10-03)
+
+- Supabase(rooms 테이블 + Realtime)를 걷어내고 Cloudflare Worker + Durable Object(`worker/`)로 교체했습니다. 무료 플랜에서 비활성 정지가 없습니다.
+- 클라이언트는 `lib/realtime/`만 바뀌었습니다: `rooms.ts`(방 API), `channel.ts`(상태 구독), `connection.ts`(방당 소켓 1개 공유, 자동 재연결, presence), `env.ts`.
+- 상태 broadcast는 서버가 저장에 성공한 상태만 내보냅니다. RLS 정책/`pg_cron`/목 서버(`scripts/supabase-mock.js`)는 삭제했습니다.
+- 환경 변수는 `NEXT_PUBLIC_REALTIME_URL` 하나입니다. 구조와 배포 절차는 `docs/cloudflare-realtime-guide.md`.
+- **배포 전 할 일**: `npx wrangler login` → `pnpm realtime:deploy` → Netlify에 `NEXT_PUBLIC_REALTIME_URL` 등록 후 재배포. 이후 Supabase 프로젝트는 삭제해도 됩니다.
+
+> 아래는 전환 이전(2026-08-06) 기록입니다. Supabase/RLS 관련 항목은 더 이상 해당하지 않습니다.
+
 ## 진행 내용
 
 ### 1. 방 참여/생성 UX (`components/realtime/RoomSharePanel.tsx`)

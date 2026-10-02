@@ -15,7 +15,7 @@ import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realt
 import { ROULETTE_HOME } from '@/lib/constants/serviceUrls';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import RoomSharePanel from '@/components/realtime/RoomSharePanel';
-import { hasSupabaseConfig } from '@/lib/supabase/env';
+import { hasRealtimeConfig } from '@/lib/realtime/env';
 import { getServerActor } from '@/lib/realtime/clientActor';
 
 interface RouletteGameState {
@@ -32,8 +32,8 @@ function CoffeeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
-  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
+  // 실시간 서버 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasRealtimeConfig() ? searchParams.get('roomId') : null;
   const isRealtimeEnabled = Boolean(roomId);
 
   const [step, Container, handleStep] = useStep(0);
@@ -58,7 +58,6 @@ function CoffeeContent() {
     name: null,
     maxCapacity: null,
   });
-  const sendStateRef = React.useRef<((state: RouletteGameState) => void) | null>(null);
 
   const currentStep = isRealtimeEnabled ? realtimeState.step : step;
   const currentOrderState = isRealtimeEnabled ? realtimeState.orderState : orderState;
@@ -80,7 +79,6 @@ function CoffeeContent() {
       };
 
       applyRealtimeState(optimisticState);
-      sendStateRef.current?.(optimisticState);
 
       try {
         await updateRoomState(roomId, optimisticState, previousState.revision);
@@ -102,7 +100,6 @@ function CoffeeContent() {
           };
 
           applyRealtimeState(retriedState);
-          sendStateRef.current?.(retriedState);
 
           try {
             await updateRoomState(roomId, retriedState, latestState.revision);
@@ -240,20 +237,19 @@ function CoffeeContent() {
       setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
 
-    const { unsubscribe, sendState } = subscribeRoomState<RouletteGameState>({
+    const { unsubscribe } = subscribeRoomState<RouletteGameState>({
       roomId,
       onState: state => {
         if (!mounted) return;
+        // 내 낙관적 업데이트보다 뒤처진(이미 지나간) 상태는 무시한다
+        if (state.revision < realtimeStateRef.current.revision) return;
         applyRealtimeState(state);
       },
     });
 
-    sendStateRef.current = sendState;
-
     return () => {
       mounted = false;
       unsubscribe();
-      sendStateRef.current = null;
     };
   }, [applyRealtimeState, roomId, router]);
 
@@ -301,7 +297,7 @@ function CoffeeContent() {
         gameType="roulette"
         roomId={roomId}
         localActor={clientActor}
-        hasConfig={hasSupabaseConfig()}
+        hasConfig={hasRealtimeConfig()}
         preferFloatingEntry
         onCreateRoom={handleCreateRoom}
         lastActor={isRealtimeEnabled ? realtimeState.lastActor : clientActor}

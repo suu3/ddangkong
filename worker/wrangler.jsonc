@@ -1,0 +1,15 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "ddangkong-realtime",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOM", "class_name": "Room" }]
+  },
+  // Workers 무료 플랜은 SQLite 백엔드 Durable Object만 쓸 수 있다
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "vars": {
+    // 방 API/WebSocket을 호출할 수 있는 웹 origin (쉼표 구분)
+    "ALLOWED_ORIGINS": "https://ddangkong.suulab.xyz,https://ddangkong.netlify.app,http://localhost:3000,http://127.0.0.1:3000"
+  }
+}

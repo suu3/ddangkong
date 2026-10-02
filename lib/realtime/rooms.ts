@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { getRealtimeUrl } from './env';
 
 interface RoomRow<T> {
   id: string;
@@ -16,7 +16,7 @@ interface RealtimeStateWithRevision {
 
 export type RealtimeGameType = 'coffee' | 'roulette' | 'hot_potato' | 'team_split';
 
-/** 방 생성 후 이 시간이 지나면 만료된 방으로 취급합니다. (DB 정리 정책과 동일한 값 유지) */
+/** 방 생성 후 이 시간이 지나면 만료된 방으로 취급합니다. (worker/src/index.ts의 값과 동일하게 유지) */
 export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** 클라이언트 측 방 생성 제한: RATE_LIMIT_WINDOW_MS 동안 RATE_LIMIT_MAX_ROOMS 개까지 */
@@ -141,6 +141,30 @@ const assertCreateRateLimit = () => {
   window.localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify([...recent, now]));
 };
 
+const ROOM_NOT_CONFIGURED_MESSAGE = '실시간 서버가 설정되지 않았어요.';
+
+/** 실시간 서버(Cloudflare Worker)의 방 API를 호출한다. 네트워크 오류는 사용자용 문구로 바꿔 던진다. */
+const requestRoom = async (
+  path: string,
+  init: { method: string; body?: string },
+  failure: { code: string; message: string }
+): Promise<Response> => {
+  const baseUrl = getRealtimeUrl();
+  if (!baseUrl) {
+    throw new RealtimeRoomError('ERR_NOT_CONFIGURED', ROOM_NOT_CONFIGURED_MESSAGE);
+  }
+
+  try {
+    return await fetch(`${baseUrl}${path}`, {
+      ...init,
+      cache: 'no-store',
+      headers: init.body ? { 'Content-Type': 'application/json' } : undefined,
+    });
+  } catch (error) {
+    throw new RealtimeRoomError(failure.code, failure.message, error instanceof Error ? error.message : String(error));
+  }
+};
+
 export const createRoom = async <T>(
   gameType: RealtimeGameType,
   gameState: T,
@@ -152,62 +176,38 @@ export const createRoom = async <T>(
 
   assertCreateRateLimit();
 
-  const id = crypto.randomUUID();
-  const payload = {
-    id,
-    status: 'active',
-    game_type: gameType,
-    name: sanitizeRoomName(options?.name, gameType),
-    max_capacity: sanitizeMaxCapacity(options?.maxCapacity),
-    game_state: gameState,
-  };
+  const failure = { code: 'ERR_CREATE_FAILED', message: '방을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' };
+  const response = await requestRoom(
+    '/rooms',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        game_type: gameType,
+        name: sanitizeRoomName(options?.name, gameType),
+        max_capacity: sanitizeMaxCapacity(options?.maxCapacity),
+        game_state: gameState,
+      }),
+    },
+    failure
+  );
 
-  const { data, error } = await supabase
-    .from('rooms')
-    .insert([payload])
-    .select('id,status,game_type,name,max_capacity,game_state,created_at')
-    .single();
-
-  if (error) {
-    const looksLikeRlsError =
-      error.code === '42501' ||
-      error.message.toLowerCase().includes('row-level security') ||
-      error.message.toLowerCase().includes('permission denied');
-
-    if (looksLikeRlsError) {
-      throw new RealtimeRoomError(
-        'ERR_RLS_BLOCKED',
-        '방 생성 권한이 없어요. 잠시 후 다시 시도해 주세요.',
-        `RLS policy blocked insert for game_type="${gameType}". ` +
-          `Allow this game_type in your rooms INSERT policy (e.g. game_type in (${GAME_TYPES.map(
-            type => `'${type}'`
-          ).join(',')})).`
-      );
-    }
-
-    throw new RealtimeRoomError(
-      'ERR_CREATE_FAILED',
-      '방을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
-      error.message
-    );
+  if (!response.ok) {
+    throw new RealtimeRoomError(failure.code, failure.message, `POST /rooms -> ${response.status}`);
   }
 
-  return data as RoomRow<T>;
+  return (await response.json()) as RoomRow<T>;
 };
 
 export const getRoom = async <T>(roomId: string) => {
-  const { data, error } = await supabase
-    .from('rooms')
-    .select('id,status,game_type,name,max_capacity,game_state,created_at')
-    .eq('id', roomId)
-    .single();
+  const failure = { code: 'ERR_FETCH_FAILED', message: '방 정보를 불러오지 못했어요.' };
+  const response = await requestRoom(`/rooms/${roomId}`, { method: 'GET' }, failure);
 
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new RealtimeRoomError('ERR_FETCH_FAILED', '방 정보를 불러오지 못했어요.', error.message);
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new RealtimeRoomError(failure.code, failure.message, `GET /rooms/${roomId} -> ${response.status}`);
   }
 
-  return data as RoomRow<T>;
+  return (await response.json()) as RoomRow<T>;
 };
 
 /** 방 참여 전 유효성 확인용. 없거나 만료/종료된 방이면 사용자용 메시지와 함께 실패합니다. */
@@ -232,31 +232,29 @@ export const assertJoinableRoom = async (roomId: string, gameType: RealtimeGameT
   return room;
 };
 
+/**
+ * 방 상태를 저장한다. 서버는 expectedRevision이 현재 revision과 다르면 409로 거절하고,
+ * 저장에 성공하면 접속자 전원에게 새 상태를 broadcast한다.
+ */
 export const updateRoomState = async <T extends RealtimeStateWithRevision>(
   roomId: string,
   gameState: T,
   expectedRevision?: number
 ) => {
-  let query = supabase.from('rooms').update({
-    game_state: gameState,
-    status: 'active',
-  });
+  const failure = { code: 'ERR_UPDATE_FAILED', message: '방 상태를 저장하지 못했어요.' };
+  const response = await requestRoom(
+    `/rooms/${roomId}`,
+    { method: 'PUT', body: JSON.stringify({ game_state: gameState, expectedRevision }) },
+    failure
+  );
 
-  query = query.eq('id', roomId);
-
-  if (typeof expectedRevision === 'number') {
-    query = query.eq('game_state->>revision', String(expectedRevision));
+  if (response.status === 409) {
+    throw new Error('Realtime conflict: stale revision');
   }
 
-  const { data, error } = await query.select('id,status,game_type,name,max_capacity,game_state,created_at').single();
-
-  if (error) {
-    if (error.code === 'PGRST116' && typeof expectedRevision === 'number') {
-      throw new Error('Realtime conflict: stale revision');
-    }
-
-    throw new RealtimeRoomError('ERR_UPDATE_FAILED', '방 상태를 저장하지 못했어요.', error.message);
+  if (!response.ok) {
+    throw new RealtimeRoomError(failure.code, failure.message, `PUT /rooms/${roomId} -> ${response.status}`);
   }
 
-  return data as RoomRow<T>;
+  return (await response.json()) as RoomRow<T>;
 };

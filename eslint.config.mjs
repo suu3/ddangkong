@@ -53,6 +53,9 @@ export default [
       ".next/**/*",
       "node_modules/**/*",
       "public/**/*",
+      // React/브라우저 코드가 아닌 Cloudflare Worker. 타입체크(pnpm realtime:typecheck)로 검증한다
+      "worker/**/*",
+      ".wrangler/**/*",
       "eslint.config.mjs",
     ],
   },

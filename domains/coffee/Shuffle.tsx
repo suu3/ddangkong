@@ -132,7 +132,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
       // 해당 카드를 선택 중인 사용자들 필터링 (나 제외)
       const selectors = Object.entries(activeSelections || {})
         .filter(([id, data]) => data.cardIndex === i && id !== clientActor)
-        .map(([id, data]) => ({ id, name: data.actor.slice(0, 5) }));
+        .map(([id, data]) => ({ id, name: `유저-${data.actor.replace('anon-', '').slice(-4)}` }));
 
       const isMySelection = activeSelections?.[clientActor || '']?.cardIndex === i;
       if (isMySelection) {

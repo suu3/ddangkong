@@ -7,6 +7,8 @@
 
 - `pnpm dev` — 개발 서버 (http://localhost:3000)
 - `pnpm build` / `pnpm lint`
+- `pnpm realtime:dev` — 실시간 서버 로컬 실행 (http://localhost:8787)
+- `pnpm realtime:typecheck` / `pnpm realtime:deploy` — Worker 타입체크 / 배포
 - `pnpm twa:update`, `pnpm twa:build` — Android TWA (`/android` 디렉터리 기준)
 
 ## 디렉터리 구조
@@ -18,18 +20,18 @@ components/            # 공용 UI (button/, input/, @layout/, realtime/RoomShar
 lib/reducer/<game>.ts  # 게임 상태 리듀서 (순수 함수)
 lib/context/<game>.ts  # 게임 Context + 초기 상태
 lib/hooks/             # useStep(스텝 전환), usePlayAudio, useTimeout 등
-lib/realtime/          # rooms.ts(CRUD), channel.ts(구독/broadcast), clientActor.ts
-lib/supabase/          # client.ts, env.ts (hasSupabaseConfig)
+lib/realtime/          # rooms.ts(방 API), channel.ts(상태 구독), connection.ts(소켓/presence), env.ts, clientActor.ts
+worker/                # 실시간 서버 (Cloudflare Worker + Durable Object). Next 앱과 별도 배포
 ```
 
 ## 환경 변수 (선택)
 
-`.env`에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+`.env`에 `NEXT_PUBLIC_REALTIME_URL` (실시간 서버 Worker 주소).
 **없어도 로컬(비실시간) 모드로 모든 게임이 동작해야 한다.** 실시간 방 공유만 비활성화됨.
 
-실시간 기능을 로컬에서 테스트할 때는 `node scripts/supabase-mock.js`로 목 서버(54321)를 띄우고
-`.env`를 `http://localhost:54321`로 지정한다 (이 머신은 Docker 미지원이라 로컬 Supabase 불가).
-스키마/RLS는 `docs/supabase-rls-guide.md` 참고.
+실시간 기능을 로컬에서 테스트할 때는 `pnpm realtime:dev`로 Worker(8787)를 띄우고
+`.env`를 `http://localhost:8787`로 지정한다.
+서버 구조/배포는 `docs/cloudflare-realtime-guide.md` 참고.
 
 ## 컨벤션
 

@@ -11,6 +11,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "realtime:dev": "wrangler dev --config worker/wrangler.jsonc",
+    "realtime:deploy": "wrangler deploy --config worker/wrangler.jsonc",
+    "realtime:typecheck": "tsc -p worker/tsconfig.json",
     "twa:init": "cd android && pnpm dlx @bubblewrap/cli@latest init --manifest=https://ddangkong.suulab.xyz/manifest.json --directory=.",
     "twa:build": "cd android && pnpm dlx @bubblewrap/cli@latest build --manifest=./twa-manifest.json",
     "twa:update": "cd android && pnpm dlx @bubblewrap/cli@latest update --manifest=./twa-manifest.json",
@@ -18,7 +21,6 @@
   },
   "dependencies": {
     "@netlify/plugin-nextjs": "^5.15.8",
-    "@supabase/supabase-js": "^2.98.0",
     "@types/node": "25.3.3",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
@@ -39,6 +41,7 @@
     "typescript": "5.9.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261002.1",
     "@svgr/webpack": "^8.1.0",
     "@types/file-saver": "^2.0.7",
     "@types/react-transition-group": "^4.4.12",
@@ -54,7 +57,8 @@
     "husky": "^9.1.7",
     "postcss-nesting": "^14.0.0",
     "postcss-preset-env": "^9.6.0",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "wrangler": "^4.147.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

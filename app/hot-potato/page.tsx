@@ -10,8 +10,8 @@ import RoomSharePanel from '@/components/realtime/RoomSharePanel';
 import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realtime/rooms';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { getServerActor } from '@/lib/realtime/clientActor';
-import { hasSupabaseConfig } from '@/lib/supabase/env';
-import { supabase } from '@/lib/supabase/client';
+import { hasRealtimeConfig } from '@/lib/realtime/env';
+import { subscribePresence, trackPresence } from '@/lib/realtime/connection';
 import { useSound } from '@/lib/context/sound';
 
 type EndReason = 'timeout' | 'insufficient_players';
@@ -130,8 +130,8 @@ const buildInitialRoomState = (
 function HotPotatoPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
-  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
+  // 실시간 서버 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasRealtimeConfig() ? searchParams.get('roomId') : null;
 
   const [clientActor, setClientActor] = useState('guest');
   const [roomState, setRoomState] = useState<HotPotatoRoomState>(() => buildInitialRoomState('guest'));
@@ -148,7 +148,6 @@ function HotPotatoPageContent() {
   const [hasEntered, setHasEntered] = useState(false);
   const nicknameInputRef = useRef('');
 
-  const sendStateRef = useRef<((state: HotPotatoRoomState) => void) | null>(null);
   const actionSeqRef = useRef(0);
 
   const { isMuted } = useSound();
@@ -180,7 +179,6 @@ function HotPotatoPageContent() {
         };
 
         applyRoomState(optimisticState);
-        sendStateRef.current?.(optimisticState);
 
         try {
           await updateRoomState(roomId, optimisticState, baseState.revision);
@@ -213,7 +211,6 @@ function HotPotatoPageContent() {
           };
 
           applyRoomState(retryState);
-          sendStateRef.current?.(retryState);
 
           try {
             await updateRoomState(roomId, retryState, latestState.revision);
@@ -629,55 +626,41 @@ function HotPotatoPageContent() {
         setIsRoomHydrated(true);
       });
 
-    const { unsubscribe, sendState } = subscribeRoomState<HotPotatoRoomState>({
+    const { unsubscribe } = subscribeRoomState<HotPotatoRoomState>({
       roomId,
       onState: state => {
         if (!mounted) return;
+        // 내 낙관적 업데이트보다 뒤처진(이미 지나간) 상태는 무시한다
+        if (state.revision < roomStateRef.current.revision) return;
         applyRoomState(state);
         setIsRoomHydrated(true);
       },
     });
 
-    sendStateRef.current = sendState;
-
     return () => {
       mounted = false;
       unsubscribe();
-      sendStateRef.current = null;
     };
   }, [applyRoomState, roomId]);
 
   useEffect(() => {
-    if (!roomId || !hasSupabaseConfig()) return;
+    if (!roomId) return;
 
-    let mounted = true;
-    const channel = supabase.channel(`presence:hot-potato:${roomId}`);
+    const unsubscribe = subscribePresence(roomId, presence => {
+      const actors = new Set<string>();
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        if (!mounted) return;
-        const state = channel.presenceState();
-        const actors = new Set<string>();
-
-        Object.values(state).forEach(presences => {
-          const first = (presences as Array<{ actor?: string }>)[0];
-          if (first?.actor) {
-            actors.add(first.actor);
-          }
-        });
-
-        setConnectedActors(Array.from(actors));
-      })
-      .subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ actor: clientActor });
-        }
+      Object.values(presence).forEach(meta => {
+        if (typeof meta.actor === 'string') actors.add(meta.actor);
       });
 
-    return () => {
-      mounted = false;
-      void supabase.removeChannel(channel);
-    };
+      setConnectedActors(Array.from(actors));
+    });
+
+    if (clientActor !== 'guest') {
+      trackPresence(roomId, { actor: clientActor });
+    }
+
+    return unsubscribe;
   }, [clientActor, roomId]);
 
   useEffect(() => {
@@ -1087,7 +1070,7 @@ function HotPotatoPageContent() {
         gameType="hot_potato"
         roomId={roomId}
         localActor={clientActor}
-        hasConfig={hasSupabaseConfig()}
+        hasConfig={hasRealtimeConfig()}
         preferFloatingEntry
         onCreateRoom={handleCreateRoom}
         lastActor={roomState.lastActor}

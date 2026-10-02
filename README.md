@@ -22,7 +22,7 @@
 - TWA 빌드: `pnpm twa:build`
 
 ### 실시간 공유 테스트(선택)
-- `.env`에 Supabase 설정
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `pnpm realtime:dev`로 실시간 서버(Cloudflare Worker)를 로컬 실행 (`http://localhost:8787`)
+- `.env`에 `NEXT_PUBLIC_REALTIME_URL=http://localhost:8787` 설정
+- 서버 구조/배포는 `docs/cloudflare-realtime-guide.md` 참고
 - `/roulette` 또는 `/coffee`에서 `방 만들기` 후 링크를 공유하면 Host/Viewer 동기화 가능

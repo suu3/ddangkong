@@ -6,7 +6,7 @@ import clsx from 'clsx';
 import MainButton from '@/components/button/MainButton';
 import { buildActorAliasMap, consumeActorRotationNotice, getActorAlias } from '@/lib/realtime/clientActor';
 import { assertJoinableRoom, getGameLabel, normalizeRoomId, RealtimeGameType } from '@/lib/realtime/rooms';
-import { supabase } from '@/lib/supabase/client';
+import { subscribePresence, trackPresence } from '@/lib/realtime/connection';
 
 interface RoomSharePanelProps {
   gameType: RealtimeGameType;
@@ -165,30 +165,21 @@ export default function RoomSharePanel({
   useEffect(() => {
     if (!roomId || !hasConfig) return;
 
-    const channel = supabase.channel(`presence:${roomId}`);
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const actors = new Set<string>();
+    const unsubscribe = subscribePresence(roomId, presence => {
+      const actors = new Set<string>();
 
-        Object.values(state).forEach(presences => {
-          const first = (presences as Array<{ actor?: string }>)[0];
-          if (first?.actor) {
-            actors.add(first.actor);
-          }
-        });
-
-        setPresenceActors(Array.from(actors));
-      })
-      .subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ actor: localActor });
-        }
+      Object.values(presence).forEach(meta => {
+        if (typeof meta.actor === 'string') actors.add(meta.actor);
       });
 
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+      setPresenceActors(Array.from(actors));
+    });
+
+    if (localActor !== 'guest') {
+      trackPresence(roomId, { actor: localActor });
+    }
+
+    return unsubscribe;
   }, [hasConfig, localActor, roomId]);
 
   useEffect(() => {
@@ -238,7 +229,7 @@ export default function RoomSharePanel({
     if (!hasConfig) {
       return (
         <div className="rounded-2xl border border-chocolate07 bg-white px-4 py-4 text-sm leading-6 text-chocolate07">
-          실시간 방 기능을 쓰려면 Supabase 설정이 필요합니다.
+          실시간 방 기능을 쓰려면 실시간 서버 설정이 필요합니다.
         </div>
       );
     }
