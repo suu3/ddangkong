@@ -130,7 +130,8 @@ const buildInitialRoomState = (
 function HotPotatoPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roomId = searchParams.get('roomId');
+  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
 
   const [clientActor, setClientActor] = useState('guest');
   const [roomState, setRoomState] = useState<HotPotatoRoomState>(() => buildInitialRoomState('guest'));

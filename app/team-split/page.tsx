@@ -53,7 +53,8 @@ const INITIAL_STATE = (hostId: string): TeamSplitState => ({
 function TeamSplitPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roomId = searchParams.get('roomId');
+  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
   const isRealtimeEnabled = Boolean(roomId);
 
   const [clientActor, setClientActor] = useState('guest');
@@ -160,7 +161,14 @@ function TeamSplitPageContent() {
       setClientActor(resolvedActor);
     }
 
-    const initial = INITIAL_STATE(resolvedActor);
+    // 방을 만들기 전에 입력해 둔 참여자/옵션/결과가 사라지지 않게 그대로 방 상태로 옮긴다
+    const initial: TeamSplitState = {
+      ...INITIAL_STATE(resolvedActor),
+      members: parsedMembers,
+      teamCount: localTeamCount,
+      result: localResult,
+      lastShuffledAt: localLastShuffledAt,
+    };
     const room = await createRoom('team_split', initial, { name: '팀 나누기 방' });
     router.push(`/team-split?roomId=${room.id}`);
   };
@@ -197,23 +205,23 @@ function TeamSplitPageContent() {
       return;
     }
 
-    const nextResult = splitIntoTeams(nextMembers, currentTeamCount);
     const now = Date.now();
     setMembersText(nextMembers.join('\n'));
 
     if (isRealtimeEnabled) {
+      // 팀 수는 렌더 시점 값이 아니라 방의 최신 상태 기준으로 나눈다 (직전 팀 수 변경이 유실되지 않게)
       await pushRealtimeState(current => ({
         nextState: {
           ...current,
           members: nextMembers,
-          result: nextResult,
+          result: splitIntoTeams(nextMembers, current.teamCount),
           lastShuffledAt: now,
         },
       }));
       return;
     }
 
-    setLocalResult(nextResult);
+    setLocalResult(splitIntoTeams(nextMembers, currentTeamCount));
     setLocalLastShuffledAt(now);
   };
 

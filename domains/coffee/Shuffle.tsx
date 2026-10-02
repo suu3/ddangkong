@@ -143,7 +143,8 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
         <Lottery
           key={i}
           ref={el => {
-            boxRef.current[i] = el;
+            // 카드 번호(i)는 1부터 시작하지만 위치 배열은 0부터라 인덱스를 맞춘다
+            boxRef.current[i - 1] = el;
           }}
           activeSelectors={selectors}
           className="cursor-pointer transition-transform hover:scale-105 active:scale-95"

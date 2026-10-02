@@ -12,7 +12,8 @@ import useStep from '@/lib/hooks/useStep';
 import { coffeeReducer, CoffeeActionType } from '@/lib/reducer/coffee';
 import { CoffeeContext, initialCoffeeState } from '@/lib/context/coffee';
 import prevBtnIcon from '@/public/button/button_prev.svg';
-import { createRoom, getRoom, updateRoomState } from '@/lib/realtime/rooms';
+import { createRoom, getRoom, isRoomExpired, updateRoomState } from '@/lib/realtime/rooms';
+import { COFFEE_HOME } from '@/lib/constants/serviceUrls';
 import { subscribeRoomState } from '@/lib/realtime/channel';
 import { hasSupabaseConfig } from '@/lib/supabase/env';
 import { supabase } from '@/lib/supabase/client';
@@ -45,7 +46,8 @@ function CoffeeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const roomId = searchParams.get('roomId');
+  // Supabase 설정이 없으면 roomId가 붙은 링크로 들어와도 로컬 모드로 동작한다
+  const roomId = hasSupabaseConfig() ? searchParams.get('roomId') : null;
   const isRealtimeEnabled = Boolean(roomId);
 
   const [step, Container, handleStep] = useStep(0);
@@ -207,7 +209,15 @@ function CoffeeContent() {
     let mounted = true;
 
     getRoom<CoffeeGameState>(roomId).then(room => {
-      if (!mounted || !room) return;
+      if (!mounted) return;
+
+      // 없는/만료된 방에서는 모든 조작이 저장에 실패해 화면이 멈추므로 로컬 모드로 돌려보낸다
+      if (!room || isRoomExpired(room.created_at)) {
+        window.alert('방을 찾을 수 없거나 만료된 링크예요. 새 방을 만들어 주세요.');
+        router.replace(COFFEE_HOME);
+        return;
+      }
+
       applyRealtimeState(room.game_state);
       setRoomInfo({ name: room.name, maxCapacity: room.max_capacity });
     });
@@ -227,7 +237,7 @@ function CoffeeContent() {
       unsubscribe();
       sendStateRef.current = null;
     };
-  }, [applyRealtimeState, roomId]);
+  }, [applyRealtimeState, roomId, router]);
 
   useEffect(() => {
     if (!isRealtimeEnabled) return;

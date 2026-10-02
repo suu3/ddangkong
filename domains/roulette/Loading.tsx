@@ -37,6 +37,9 @@ const Loading = ({ handleStep: _handleStep, resultIndex, onReplay }: LoadingProp
 
     const radius = canvas?.width / 2; // 룰렛의 반지름
 
+    // resultIndex가 뒤늦게 확정되면 effect가 다시 돌기 때문에, 이전 회전 루프는 반드시 멈춘다
+    let cancelled = false;
+
     spinRoulette();
     // console.log('ddd', total);
     // 룰렛 그리기
@@ -106,6 +109,8 @@ const Loading = ({ handleStep: _handleStep, resultIndex, onReplay }: LoadingProp
       const finalAngle = 360 * 8 + (360 - targetBaseAngle);
 
       function animate() {
+        if (cancelled) return;
+
         const currentTime = Date.now();
         const elapsedTime = currentTime - startTime;
         const progress = Math.min(1, elapsedTime / spinTime);
@@ -126,6 +131,10 @@ const Loading = ({ handleStep: _handleStep, resultIndex, onReplay }: LoadingProp
 
       animate();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [resultIndex, total]);
 
   return (

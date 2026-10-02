@@ -30,7 +30,7 @@
 
 ## Next action item
 1. Supabase 실환경에서 2대 이상 접속해 폭탄 돌리기 **동시 PASS/종료 직전 연타** 시 결과가 1회만 기록되는지 검증.
-2. `app/coffee`, `app/roulette`는 아직 에러 배너 UI가 없어, 만료된 링크로 직접 들어오면 조용히 로컬 모드로 동작합니다. 두 페이지에도 안내 UI 추가 필요.
+2. `app/coffee`, `app/roulette`는 없는/만료된 방 링크로 들어오면 alert로 안내한 뒤 로컬 모드로 돌려보냅니다. (에러 배너 UI는 아직 없음)
 3. 방 생성을 서버(Route Handler/Edge Function)로 옮겨 IP 단위 rate limit 적용 검토.
 4. 폭탄 돌리기 벌칙(당첨자 미션) 표시 — 기획서 5절 선택 항목.
 
