@@ -35,19 +35,28 @@
 - [x] 클라이언트 연결 및 공통 도메인 상태
 - [x] 화면별 훅/구성 분리와 4개 게임 전환
 - [x] Supabase 의존 제거
-- [ ] 도메인·Android 배포 준비 및 실제 접근 가능한 배포 수행
+- [x] 도메인·Android 배포 준비 및 실제 접근 가능한 배포 수행
 - [x] 전체 자동검사와 브라우저 확인
 
 ## 검증과 리뷰
 
-- 클라이언트/프로토콜/스토어 8개, Worker 14개 통과.
+- 클라이언트/프로토콜/스토어/PWA 10개, Worker 15개 통과.
 - 두 브라우저 E2E 5개: 룰렛 공유·재연결·새로고침, 팀 결과, 잘못된 링크, 커피 선택 복원·최종 결과, 폭탄 준비·전달·새로고침 통과.
 - TypeScript(웹/Worker) 통과, lint 오류 0개(기존 UI 경고는 잔존).
 - 독립 리뷰의 중요 지적 4개 모두 재현 후 수정: 교체된 소켓 이벤트 오염, 저장된 세션의 만료 복구, 오프라인 폭탄 전달 대상, 미인증 소켓 점유.
 - 미인증 연결 10초 제한과 인증 시 정원 검사, 방 만료 HTTP 재확인, 단일 연결 가드와 소켓 identity 검사를 적용했다.
 - 폭탄 라운드는 서버 alarm으로 종료하고, 짧은 새로고침으로 인원이 줄면 진행자 화면에서 10초간 재접속을 기다린다.
 - 기존 Android 키 검증·APK/AAB 생성·서명 검증 성공. 인증서 지문이 기존 assetlinks 항목과 일치한다.
+- 운영 도메인에서도 E2E 5개를 실행해 전부 통과했다. 첫 운영 검사에서 첫 PWA 설치가 방 생성 요청을 끊는 문제를 재현했고, 최초 controller 획득 시 새로고침하지 않도록 수정 후 재검증했다.
 
-## 외부 완료 조건
+## 배포 결과
 
-Cloudflare/Netlify 계정 접근, Android 서명키·키 비밀번호 및 Play Console 배포 권한은 로컬 코드만으로 대체할 수 없다. 실제 접근 가능 여부를 확인하고, 없는 항목은 정확히 기록한다.
+- 웹: https://ddangkong.suulab.xyz
+- Netlify 게시 배포: `6ad54a60cc8161e146ca1a82`, 소스 `32a52066378ec317b98a70f6cb88195ce8ab530b`.
+- Worker: https://ddangkong-realtime.mandalart.workers.dev, 버전 `6b3be9f9-f958-4daa-be00-6b7b9859b1e3`.
+- Windows 로컬 배포 패키징은 심볼릭 링크 권한 오류가 있어 작업 브랜치를 푸시하고 Netlify Linux 빌드에서 게시했다. main 병합은 하지 않았다.
+- 검토용 draft PR: https://github.com/suu3/ddangkong/pull/31
+- 앱: `android/app-release-bundle.aab`, `android/app-release-signed.apk`, 패키지 `xyz.ddangkong.twa`, versionCode 10, 이름 3.0.0, min SDK 24, target SDK 36.
+- AAB SHA-256: `97C468080437CAF4228D7E809EE412929F64E7EA60C1BDB633C350DF74C7D244`.
+- APK SHA-256: `B7F61078EB00EB1D35C2C1BE56B07BBF049CEB30469B1AA3C07F0E82A66E695B`.
+- Google Play 업로드·심사는 수행하지 않았다. 서명된 AAB를 기존 앱의 새 버전으로 제출할 수 있는 상태다.
