@@ -49,9 +49,23 @@ export default [
     },
   },
   {
+    files: ["**/*.ts"],
+    rules: {
+      // These files contain protocol/Worker classes, not React class components.
+      "react/no-is-mounted": "off",
+      // TypeScript checks type names and Cloudflare runtime globals.
+      "no-undef": "off",
+      "no-unused-vars": "off",
+    },
+  },
+  {
     ignores: [
       ".next/**/*",
+      ".netlify/**",
       "node_modules/**/*",
+      "**/.wrangler/**",
+      "test-results/**",
+      "playwright-report/**",
       "public/**/*",
       "eslint.config.mjs",
     ],

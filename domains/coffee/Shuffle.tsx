@@ -13,13 +13,14 @@ import { CoffeeContext } from '@/lib/context/coffee';
 interface ShuffleProps {
   handleStep: (type: 'next' | 'prev') => void;
   cnt: number;
+  canControl?: boolean;
 }
 
 type Location = [number, number][];
 
 const CardContainer = ({ children }: ContainerProps) => <div className="flex justify-evenly">{children}</div>;
 
-export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
+export default function Shuffle({ handleStep, cnt, canControl = true }: ShuffleProps) {
   const ANIMATION_DURATION = 2500 + cnt * 100;
   const ANIMATION_TOTAL = 1500;
 
@@ -146,6 +147,7 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
             boxRef.current[i] = el;
           }}
           activeSelectors={selectors}
+          ariaLabel={`커피 카드 ${i} 선택`}
           className="cursor-pointer transition-transform hover:scale-105 active:scale-95"
           onClick={() => handleCardSelect?.(isMySelection ? null : i)}
         >
@@ -171,10 +173,10 @@ export default function Shuffle({ handleStep, cnt }: ShuffleProps) {
         {gridDivs}
       </div>
       <div className="flex gap-2 mb-10">
-        <MainButton disabled={isShuffling} variant="outlined" color="chocolate" onClick={onClickShuffle}>
+        <MainButton disabled={isShuffling || !canControl} variant="outlined" color="chocolate" onClick={onClickShuffle}>
           순서 섞기
         </MainButton>
-        <MainButton variant="contained" color="chocolate" onClick={onClickNext}>
+        <MainButton disabled={!canControl} variant="contained" color="chocolate" onClick={onClickNext}>
           결과 확인
         </MainButton>
       </div>

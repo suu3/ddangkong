@@ -11,10 +11,11 @@ interface LotteryProps {
   style?: CSSProperties;
   onClick?: () => void;
   activeSelectors?: Array<{ id: string; name: string }>;
+  ariaLabel?: string;
 }
 
 const Lottery = forwardRef<HTMLDivElement, LotteryProps>(
-  ({ children, className = '', style = {}, onClick, activeSelectors = [] }, ref) => {
+  ({ children, className = '', style = {}, onClick, activeSelectors = [], ariaLabel }, ref) => {
     // 간단한 해시로 색상 생성
     const getSelectorColor = (id: string) => {
       const colors = ['#E91E63', '#9C27B0', '#2196F3', '#00BCD4', '#4CAF50', '#FFC107', '#FF5722'];
@@ -24,7 +25,21 @@ const Lottery = forwardRef<HTMLDivElement, LotteryProps>(
     };
 
     return (
-      <div className={clsx(styles['wrapper'], className)} style={style} ref={ref} onClick={onClick}>
+      <div
+        className={clsx(styles['wrapper'], className)}
+        style={style}
+        ref={ref}
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        aria-label={ariaLabel}
+        onKeyDown={event => {
+          if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onClick();
+          }
+        }}
+      >
         <Image priority src={noteImage} fill sizes="100%" alt="제비" />
         {activeSelectors.map(selector => (
           <div

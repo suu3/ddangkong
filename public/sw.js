@@ -1,4 +1,4 @@
-const VERSION = 'ddangkong-v2';
+const VERSION = 'ddangkong-v3';
 const SHELL_CACHE = `shell-${VERSION}`;
 const RUNTIME_CACHE = `runtime-${VERSION}`;
 const STATIC_CACHE = `static-${VERSION}`;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { watchServiceWorkerController } from '@/src/shared/lib/service-worker';
 
 const SW_URL = '/sw.js';
 
@@ -39,17 +40,13 @@ export default function PwaRegistrar() {
 
     register();
 
-    const onControllerChange = () => {
-      if (!cancelled) {
-        window.location.reload();
-      }
-    };
-
-    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    const stopWatchingController = watchServiceWorkerController(navigator.serviceWorker, () =>
+      window.location.reload()
+    );
 
     return () => {
       cancelled = true;
-      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      stopWatchingController();
     };
   }, []);
 

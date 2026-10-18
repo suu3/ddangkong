@@ -40,6 +40,12 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".netlify",
+    "workers",
+    "e2e",
+    "playwright.config.ts",
+    "vitest.config.ts",
+    "src/**/*.test.ts"
   ]
 }
