@@ -1,40 +1,22 @@
-# 심심풀이 땅콩 (ddangkong)
+# 심심풀이 땅콩 V3
 
-여러 인터랙션이 들어간 복불복 미니게임 웹앱. Next.js(App Router) + PWA + Android TWA.
-게임: `/coffee`(커피내기), `/roulette`(룰렛), `/hot-potato`(폭탄 돌리기), `/team-split`(팀 나누기).
+Next.js App Router + React 19 + PWA + Android TWA. 웹은 Netlify, 실시간 서버는 Cloudflare Worker + SQLite Durable Objects.
 
-## 명령어
+- 경로: /coffee, /roulette, /hot-potato, /team-split
+- app/: 라우팅과 전역 Provider
+- src/views/<game>/model/: 화면별 훅, src/views/<game>/ui/: 화면 구성
+- src/widgets/room-share/: 방 공유 UI
+- src/entities/room/: 방 데이터, 세션, 공통 상태와 구독
+- src/shared/api/: HTTP/WebSocket 및 런타임 프로토콜 검증
+- workers/realtime/: 권한, SQLite 저장, revision, WebSocket, 만료
+- domains/, components/, lib/: 기존 게임 UI·공통 도구를 사용하는 범위부터 점진적으로 정리
 
-- `pnpm dev` — 개발 서버 (http://localhost:3000)
-- `pnpm build` / `pnpm lint`
-- `pnpm twa:update`, `pnpm twa:build` — Android TWA (`/android` 디렉터리 기준)
+의존 방향: views → widgets → entities → shared. 같은 레이어의 다른 슬라이스를 직접 참조하지 않는다. 불필요한 features/widgets 레이어는 만들지 않는다.
 
-## 디렉터리 구조
+개발: pnpm dev. 로컬 실시간 서버: pnpm realtime:dev. .env.local에 NEXT_PUBLIC_REALTIME_API_URL=http://localhost:8787 설정. 미설정이어도 로컬 게임은 사용할 수 있어야 한다.
 
-```
-app/<game>/page.tsx    # 게임 페이지. 상태 오케스트레이션 + 실시간 동기화 담당
-domains/<game>/        # 게임 전용 스텝 컴포넌트 (Start, Order, Loading 등)
-components/            # 공용 UI (button/, input/, @layout/, realtime/RoomSharePanel)
-lib/reducer/<game>.ts  # 게임 상태 리듀서 (순수 함수)
-lib/context/<game>.ts  # 게임 Context + 초기 상태
-lib/hooks/             # useStep(스텝 전환), usePlayAudio, useTimeout 등
-lib/realtime/          # rooms.ts(CRUD), channel.ts(구독/broadcast), clientActor.ts
-lib/supabase/          # client.ts, env.ts (hasSupabaseConfig)
-```
+검증: pnpm test, pnpm test:worker, pnpm test:e2e, pnpm lint, pnpm build. Worker 타입 검사는 pnpm exec tsc -p workers/realtime/tsconfig.json --noEmit.
 
-## 환경 변수 (선택)
+화면은 한국어, 기존 chocolate 색 토큰과 공통 UI를 사용한다. useSearchParams 화면은 Suspense 경계로 감싼다. 이 경계는 라우팅용이며 연결 로딩은 명시적 상태로 처리한다.
 
-`.env`에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-**없어도 로컬(비실시간) 모드로 모든 게임이 동작해야 한다.** 실시간 방 공유만 비활성화됨.
-
-실시간 기능을 로컬에서 테스트할 때는 `node scripts/supabase-mock.js`로 목 서버(54321)를 띄우고
-`.env`를 `http://localhost:54321`로 지정한다 (이 머신은 Docker 미지원이라 로컬 Supabase 불가).
-스키마/RLS는 `docs/supabase-rls-guide.md` 참고.
-
-## 컨벤션
-
-- 모든 페이지/컴포넌트는 `'use client'` 클라이언트 컴포넌트. 서버 컴포넌트 도입하지 않는다.
-- 스타일: Tailwind 유틸리티 + 컴포넌트별 CSS Module(`kebab-case.module.css`) 혼용.
-- import는 `@/` 경로 별칭 사용.
-- UI 텍스트는 한국어.
-- `useSearchParams`를 쓰는 페이지는 반드시 `<Suspense>`로 감싼다 (Next 빌드 요구사항).
+배포 및 Android는 docs/cloudflare-realtime-deploy.md와 docs/domain-and-android.md를 따른다. 비밀번호·서명키·토큰은 로그나 Git에 넣지 않는다.

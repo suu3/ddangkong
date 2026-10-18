@@ -2,6 +2,10 @@
   command = "pnpm run build"
   publish = ".next"
 
+[build.environment]
+  NODE_VERSION = "24.14.0"
+  NEXT_PUBLIC_REALTIME_API_URL = "https://ddangkong-realtime.mandalart.workers.dev"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 

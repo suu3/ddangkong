@@ -4,15 +4,20 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import MainButton from '@/components/button/MainButton';
-import { buildActorAliasMap, consumeActorRotationNotice, getActorAlias } from '@/lib/realtime/clientActor';
-import { assertJoinableRoom, getGameLabel, normalizeRoomId, RealtimeGameType } from '@/lib/realtime/rooms';
-import { supabase } from '@/lib/supabase/client';
+import { buildActorAliasMap, consumeActorRotationNotice, getActorAlias } from '@/src/entities/room';
+import { assertJoinableRoom, getGameLabel, normalizeRoomId, RealtimeGameType } from '@/src/entities/room';
+import type { ConnectionStatus } from '@/src/entities/room';
 
 interface RoomSharePanelProps {
   gameType: RealtimeGameType;
   roomId: string | null;
   localActor: string;
   hasConfig: boolean;
+  presenceActors: string[];
+  connectionStatus: ConnectionStatus;
+  connectionError?: string | null;
+  expiresAt?: string;
+  onRetry?: () => void;
   preferFloatingEntry?: boolean;
   lastActor?: string | null;
   roomName?: string | null;
@@ -25,6 +30,11 @@ export default function RoomSharePanel({
   roomId,
   localActor,
   hasConfig,
+  presenceActors,
+  connectionStatus,
+  connectionError,
+  expiresAt,
+  onRetry,
   preferFloatingEntry = false,
   onCreateRoom,
   lastActor,
@@ -35,7 +45,6 @@ export default function RoomSharePanel({
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [createRoomError, setCreateRoomError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [presenceActors, setPresenceActors] = useState<string[]>([]);
   const [inputRoomId, setInputRoomId] = useState('');
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
@@ -51,7 +60,7 @@ export default function RoomSharePanel({
     () => buildActorAliasMap([...presenceActors, localActor, ...(lastActor ? [lastActor] : [])]),
     [lastActor, localActor, presenceActors]
   );
-  const presenceCount = presenceActors.length || 1;
+  const presenceCount = presenceActors.length;
 
   const parseRoomLock = (value: string | null): { roomId?: string } | null => {
     if (!value) return null;
@@ -163,35 +172,6 @@ export default function RoomSharePanel({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!roomId || !hasConfig) return;
-
-    const channel = supabase.channel(`presence:${roomId}`);
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const actors = new Set<string>();
-
-        Object.values(state).forEach(presences => {
-          const first = (presences as Array<{ actor?: string }>)[0];
-          if (first?.actor) {
-            actors.add(first.actor);
-          }
-        });
-
-        setPresenceActors(Array.from(actors));
-      })
-      .subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ actor: localActor });
-        }
-      });
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [hasConfig, localActor, roomId]);
-
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!roomId) return;
     if (!localActor || localActor === 'guest') return;
@@ -238,7 +218,7 @@ export default function RoomSharePanel({
     if (!hasConfig) {
       return (
         <div className="rounded-2xl border border-chocolate07 bg-white px-4 py-4 text-sm leading-6 text-chocolate07">
-          실시간 방 기능을 쓰려면 Supabase 설정이 필요합니다.
+          실시간 서버 설정이 필요합니다. 혼자 하는 게임은 바로 즐길 수 있어요.
         </div>
       );
     }
@@ -364,6 +344,9 @@ export default function RoomSharePanel({
         ) : null}
       </div>
 
+      {expiresAt ? (
+        <p className="text-sm text-chocolate06">만료: {new Date(expiresAt).toLocaleString('ko-KR')}</p>
+      ) : null}
       {showActorNotice ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
           접속 정보가 만료되어 새 익명 ID가 발급됐어요. 이전에 참여하던 방에서는 다른 사람으로 표시될 수 있어요.
@@ -394,8 +377,32 @@ export default function RoomSharePanel({
     return <div className="mx-auto flex max-w-[280px] flex-col gap-3 px-4 pt-4">{renderEntryContent()}</div>;
   }
 
+  const statusMessage =
+    connectionError ??
+    {
+      connecting: '방에 연결하고 있어요.',
+      reconnecting: '연결이 끊겨 다시 연결하고 있어요.',
+      expired: '방을 찾을 수 없거나 만료된 링크예요. 새 방을 만들어 주세요.',
+      error: '실시간 서버에 연결하지 못했어요.',
+      disabled: '실시간 서버 설정이 필요합니다.',
+      connected: '',
+    }[connectionStatus];
   return (
     <>
+      {hasRoom && statusMessage ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-3 left-1/2 z-[1001] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-chocolate07/20 bg-white p-4 text-sm text-chocolate07 shadow-lg"
+        >
+          {statusMessage}
+          {(connectionStatus === 'error' || connectionStatus === 'reconnecting') && onRetry ? (
+            <button type="button" className="ml-2 underline" onClick={onRetry}>
+              다시 연결
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="fixed right-24 top-[0.375rem] z-[1001] flex justify-end">
         <button
           type="button"
