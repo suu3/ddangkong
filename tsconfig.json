@@ -41,6 +41,7 @@
   ],
   "exclude": [
     "node_modules",
+    ".netlify",
     "workers",
     "e2e",
     "playwright.config.ts",

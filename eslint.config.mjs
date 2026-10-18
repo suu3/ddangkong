@@ -61,6 +61,7 @@ export default [
   {
     ignores: [
       ".next/**/*",
+      ".netlify/**",
       "node_modules/**/*",
       "**/.wrangler/**",
       "test-results/**",
