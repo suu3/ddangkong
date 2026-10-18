@@ -1,12 +1,13 @@
 import { SELF, env, runInDurableObject, evictDurableObject, runDurableObjectAlarm } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 
-async function create() {
+async function create(maxCapacity = 10) {
   const response = await SELF.fetch('https://worker.test/rooms', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': crypto.randomUUID() },
     body: JSON.stringify({
       gameType: 'roulette',
+      maxCapacity,
       actorId: 'anon-host1234',
       state: {
         revision: 0,
@@ -39,6 +40,38 @@ async function until(check: () => boolean) {
   }
 }
 describe('authenticated durable sockets', () => {
+  it('enforces capacity at authentication even when sessions were issued before anyone connected', async () => {
+    const { room, token } = await create(2);
+    const join = async () =>
+      (
+        (await (
+          await SELF.fetch(`https://worker.test/rooms/${room.id}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+          })
+        ).json()) as any
+      ).token;
+    const firstToken = await join();
+    const excessToken = await join();
+    const host = await connect(room.id, token);
+    const first = await connect(room.id, firstToken);
+    const response = await SELF.fetch(`https://worker.test/rooms/${room.id}/connect`, {
+      headers: { Upgrade: 'websocket' },
+    });
+    const excess = response.webSocket!;
+    excess.accept();
+    const events: any[] = [];
+    excess.addEventListener('message', event => {
+      events.push(JSON.parse(String(event.data)));
+    });
+    excess.send(JSON.stringify({ v: 1, type: 'authenticate', token: excessToken }));
+    await until(() => events.some(event => event.code === 'ROOM_FULL'));
+    expect(events.some(event => event.type === 'snapshot')).toBe(false);
+    host.ws.close();
+    first.ws.close();
+    excess.close();
+  });
   it('releases unauthenticated sockets after the authentication deadline without expiring the room', async () => {
     const { room } = await create();
     const response = await SELF.fetch(`https://worker.test/rooms/${room.id}/connect`, {
