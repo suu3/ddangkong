@@ -128,6 +128,37 @@ describe('authenticated durable sockets', () => {
     host.ws.close();
     member.ws.close();
   });
+  it('serializes simultaneous writes and deduplicates replayed requests', async () => {
+    const { room, token } = await create();
+    const first = await connect(room.id, token);
+    const second = await connect(room.id, token);
+    const request = (requestId: string, step: number) => ({
+      v: 1,
+      type: 'state_update',
+      requestId,
+      expectedRevision: 0,
+      state: { ...room.state, step },
+    });
+    first.ws.send(JSON.stringify(request('parallel-a', 1)));
+    second.ws.send(JSON.stringify(request('parallel-b', 2)));
+    const responses = () =>
+      [
+        ...first.events.filter(event => event.requestId === 'parallel-a'),
+        ...second.events.filter(event => event.requestId === 'parallel-b'),
+      ].filter(event => ['state_updated', 'error'].includes(event.type));
+    await until(() => responses().length === 2);
+    expect(responses().filter(event => event.type === 'state_updated')).toHaveLength(1);
+    expect(responses().filter(event => event.code === 'STALE_REVISION')).toHaveLength(1);
+    const winner = responses().find(event => event.type === 'state_updated');
+    const winnerSocket = winner.requestId === 'parallel-a' ? first.ws : second.ws;
+    winnerSocket.send(JSON.stringify(request(winner.requestId, 99)));
+    await until(() => responses().length === 3);
+    const saved = (await (await SELF.fetch(`https://worker.test/rooms/${room.id}`)).json()) as any;
+    expect(saved.state.revision).toBe(1);
+    expect(saved.state.step).not.toBe(99);
+    first.ws.close();
+    second.ws.close();
+  });
   it('does not grant a new session the creator identity or host role', async () => {
     const { room } = await create();
     const response = await SELF.fetch(`https://worker.test/rooms/${room.id}/join`, {

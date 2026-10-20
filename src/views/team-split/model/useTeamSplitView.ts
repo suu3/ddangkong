@@ -9,6 +9,8 @@ import { getServerActor } from '@/src/entities/room';
 import { useSound } from '@/lib/context/sound';
 import { parseNames, normalizeNames, splitTeams } from '@/src/shared/lib/party-members';
 
+import { assertTeamConfig } from '@/src/shared/lib/team-config';
+
 export type TeamCount = 2 | 3 | 4;
 
 export interface TeamSplitState {
@@ -117,8 +119,10 @@ export function useTeamSplitView() {
     }
     setErrorBanner(null);
     if (isRealtimeEnabled) {
-      const success = await pushRealtimeState(current => ({ nextState: { ...current, members } }));
-      if (!success) return false;
+      return pushRealtimeState(current => {
+        assertTeamConfig(current, realtimeState);
+        return { nextState: { ...current, members } };
+      });
     }
     setMembersText(members.join('\n'));
     return true;
@@ -128,14 +132,17 @@ export function useTeamSplitView() {
     if (teamCount > parsedMembers.length) return;
 
     if (isRealtimeEnabled) {
-      await pushRealtimeState(current => ({
-        nextState: {
-          ...current,
-          teamCount,
-          result: Array.from({ length: teamCount }, () => [] as string[]),
-          lastShuffledAt: null,
-        },
-      }));
+      await pushRealtimeState(current => {
+        assertTeamConfig(current, realtimeState);
+        return {
+          nextState: {
+            ...current,
+            teamCount,
+            result: Array.from({ length: teamCount }, () => [] as string[]),
+            lastShuffledAt: null,
+          },
+        };
+      });
       return;
     }
 
@@ -162,23 +169,24 @@ export function useTeamSplitView() {
       });
       return;
     }
-    const nextResult = splitTeams(nextMembers, currentTeamCount);
     const now = Date.now();
-    setMembersText(nextMembers.join('\n'));
 
     if (isRealtimeEnabled) {
-      await pushRealtimeState(current => ({
-        nextState: {
-          ...current,
-          members: nextMembers,
-          result: nextResult,
-          lastShuffledAt: now,
-        },
-      }));
+      await pushRealtimeState(current => {
+        assertTeamConfig(current, realtimeState);
+        return {
+          nextState: {
+            ...current,
+            result: splitTeams(current.members, current.teamCount),
+            lastShuffledAt: now,
+          },
+        };
+      });
       return;
     }
 
-    setLocalResult(nextResult);
+    setMembersText(nextMembers.join('\n'));
+    setLocalResult(splitTeams(nextMembers, currentTeamCount));
     setLocalLastShuffledAt(now);
   };
   useEffect(() => {
@@ -209,6 +217,9 @@ export function useTeamSplitView() {
       shuffleAudioRef.current = null;
     };
   }, []);
+  useEffect(() => {
+    if (isMuted) shuffleAudioRef.current?.pause();
+  }, [isMuted]);
   useEffect(() => {
     const prev = prevShuffledAtRef.current;
     prevShuffledAtRef.current = currentLastShuffledAt;

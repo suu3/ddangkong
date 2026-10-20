@@ -6,6 +6,7 @@ import useStep from '@/lib/hooks/useStep';
 
 import { RouletteAction, rouletteReducer } from '@/lib/reducer/roulette';
 import { initialRouletteState } from '@/lib/context/roulette';
+import { rouletteResult } from '@/src/shared/lib/roulette-result';
 
 import { useRoom, createRoom } from '@/src/entities/room';
 
@@ -142,7 +143,7 @@ export function useRouletteView() {
     void pushRealtimeState(currentState => ({
       step: currentState.step,
       orderState: currentState.orderState,
-      resultIndex: Math.floor(Math.random() * currentState.orderState.total.length),
+      resultIndex: rouletteResult(currentState),
     }));
   }, [
     currentOrderState.total.length,

@@ -1,11 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import UniqueText from '@/components/UniqueText';
 import MainButton from '@/components/button/MainButton';
-import { useSound } from '@/lib/context/sound';
 import { downloadScreenshot } from '@/lib/utils/image';
 import { copyCurrentURL } from '@/lib/utils/clipboard';
 import { COFFEE_HOME } from '@/lib/constants/serviceUrls';
@@ -20,8 +19,6 @@ function CoffeeResultContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const boom = searchParams.get('boom');
-  const muted = searchParams.get('muted') !== 'false';
-  const { setMuted } = useSound();
 
   const screenRef = useRef(null);
 
@@ -30,10 +27,6 @@ function CoffeeResultContent() {
 
     downloadScreenshot(screenRef.current);
   };
-
-  useEffect(() => {
-    setMuted(muted);
-  }, [muted, setMuted]);
 
   return (
     <div className="px-4 py-8" ref={screenRef}>

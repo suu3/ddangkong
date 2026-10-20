@@ -44,3 +44,55 @@
 .iconButton:hover {
   background: #f8f3ec;
 }
+
+.menuContainer {
+  position: relative;
+}
+.settings {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  width: min(17rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid #ded0c2;
+  border-radius: 1rem;
+  background: #fffcf6;
+  box-shadow: 0 8px 24px #493b371a;
+  color: #493b37;
+}
+.settingsTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.soundSetting {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: #f3eadf;
+}
+.soundSetting:focus-visible {
+  outline: 2px solid #80634c;
+  outline-offset: 2px;
+}
+.soundStatus {
+  margin-left: auto;
+  border-radius: 1rem;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #fff;
+}
+.soundSetting[aria-checked='true'] .soundStatus {
+  background: #493b37;
+  color: white;
+}
+.settingsHint {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #806e63;
+}

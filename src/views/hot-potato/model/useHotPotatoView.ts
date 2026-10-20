@@ -463,6 +463,11 @@ export function useHotPotatoView() {
     };
   }, []);
   useEffect(() => {
+    if (!isMuted) return;
+    boomAudioRef.current?.pause();
+    tickAudioRef.current?.pause();
+  }, [isMuted]);
+  useEffect(() => {
     const prevStatus = prevGameStatusRef.current;
     prevGameStatusRef.current = roomState.game.status;
 

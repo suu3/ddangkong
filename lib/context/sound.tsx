@@ -43,7 +43,7 @@ interface SoundContextValue {
 const SoundContext = createContext<SoundContextValue | null>(null);
 
 export function SoundProvider({ children }: { children: React.ReactNode }) {
-  const [isMuted, setMutedState] = useState(false);
+  const [isMuted, setMutedState] = useState(true);
   const [track, setTrack] = useState<GlobalSoundTrack | null>(null);
   const pathname = usePathname();
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -171,10 +171,14 @@ export function GlobalSoundButton() {
     <button
       type="button"
       onClick={toggleMute}
-      className={navigationStyles.iconButton}
+      className={navigationStyles.soundSetting}
+      role="switch"
+      aria-checked={!isMuted}
       aria-label={isMuted ? '사운드 켜기' : '사운드 끄기'}
     >
-      <Image src={isMuted ? muteIcon : playIcon} alt="" width={32} height={32} />
+      <Image src={isMuted ? muteIcon : playIcon} alt="" width={24} height={24} />
+      <span>소리</span>
+      <span className={navigationStyles.soundStatus}>{isMuted ? 'OFF' : 'ON'}</span>
     </button>
   );
 }

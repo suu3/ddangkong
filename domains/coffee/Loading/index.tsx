@@ -19,10 +19,6 @@ interface LoadingProps {
 }
 
 const Loading = ({ resultValue, roomId, role, isRealtimeEnabled }: LoadingProps) => {
-  const {
-    allMuteState: { isAllMuted },
-  } = useContext(CoffeeContext);
-
   const [step, Container, handleStep] = useStep(0);
   const [changed, setChanged] = useState(false);
 
@@ -52,7 +48,6 @@ const Loading = ({ resultValue, roomId, role, isRealtimeEnabled }: LoadingProps)
 
       const searchParams = new URLSearchParams({
         boom: randomResult,
-        muted: String(isAllMuted),
       });
 
       if (roomId) searchParams.set('roomId', roomId);
