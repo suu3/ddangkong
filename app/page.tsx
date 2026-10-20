@@ -1,10 +1,12 @@
 import GameMenu from '@/components/@layout/GameMenu';
 import UniqueText from '@/components/UniqueText';
 import Image from 'next/image';
-import bombLogo from '@/public/hot-potato/bomb.png';
+import bombLogo from '@/public/hot-potato/bomb-v2.png';
 import coffeeLogo from '@/public/logos/games/coffee.svg';
 import rouletteLogo from '@/public/logos/games/roulette.svg';
-import teamSplitLogo from '@/public/split-team/main.png';
+import quizLogo from '@/public/logos/games/initial-quiz.svg';
+import ladderLogo from '@/public/logos/games/ladder.svg';
+import teamSplitLogo from '@/public/split-team/main-v2.png';
 import { COFFEE_HOME, HOT_POTATO_HOME, ROULETTE_HOME, TEAM_SPLIT_HOME } from '@/lib/constants/serviceUrls';
 
 const games = [
@@ -51,13 +53,39 @@ const games = [
     link: TEAM_SPLIT_HOME,
     title: '랜덤 팀 나누기',
     image: (
-      <Image src={teamSplitLogo} width={96} height={96} alt="랜덤 팀 나누기" className="h-24 w-24 object-contain" />
+      <Image
+        src={teamSplitLogo}
+        width={154}
+        height={120}
+        alt="랜덤 팀 나누기"
+        className="h-[7.5rem] w-[9.625rem] object-contain"
+      />
     ),
     badges: [
       { label: '1인 가능', tone: 'blue' as const },
       { label: '실시간 공유 가능', tone: 'amber' as const },
     ],
     description: '참여 인원을 입력하면 팀을 빠르게 랜덤 배정해 줘서 게임, 행사, 조별 활동 전에 바로 쓰기 좋아요.',
+  },
+  {
+    link: '/ladder',
+    title: '두근두근 사다리',
+    image: <Image src={ladderLogo} width={120} height={120} alt="사다리 타기" />,
+    badges: [
+      { label: 'NEW', tone: 'rose' as const },
+      { label: '2~8명 · 한 기기', tone: 'amber' as const },
+    ],
+    description: '이름과 결과를 적고 사다리를 따라가세요. 한 명씩 공개하거나 전체 결과를 한 번에 볼 수 있어요.',
+  },
+  {
+    link: '/initial-quiz',
+    title: '입이 근질근질 초성 퀴즈',
+    image: <Image src={quizLogo} width={120} height={120} alt="초성 퀴즈" />,
+    badges: [
+      { label: 'NEW', tone: 'rose' as const },
+      { label: '2~4팀 · 한 기기', tone: 'amber' as const },
+    ],
+    description: '음식·동물·생활 초성을 말로 맞혀보세요. 제한 시간 안에 정답을 많이 맞힌 팀이 승리해요.',
   },
 ] as const;
 

@@ -7,6 +7,7 @@ import { useRoom, createRoom, roomErrorMessage } from '@/src/entities/room';
 
 import { getServerActor } from '@/src/entities/room';
 import { useSound } from '@/lib/context/sound';
+import { parseNames, normalizeNames, splitTeams } from '@/src/shared/lib/party-members';
 
 export type TeamCount = 2 | 3 | 4;
 
@@ -68,7 +69,7 @@ export function useTeamSplitView() {
   const currentTeamCount = isRealtimeEnabled ? realtimeState.teamCount : localTeamCount;
   const currentResult = isRealtimeEnabled ? realtimeState.result : localResult;
   const currentLastShuffledAt = isRealtimeEnabled ? realtimeState.lastShuffledAt : localLastShuffledAt;
-  const parsedMembers = useMemo(() => parseAndNormalizeMembers(membersText), [membersText]);
+  const parsedMembers = useMemo(() => normalizeNames(parseNames(membersText)), [membersText]);
   const showIntro = !isRealtimeEnabled && !hasEntered;
   const pushRealtimeState = useCallback(
     async (mutator: (current: TeamSplitState) => MutateResult) => {
@@ -99,12 +100,32 @@ export function useTeamSplitView() {
       setClientActor(resolvedActor);
     }
 
-    const initial = INITIAL_STATE(resolvedActor);
+    const initial = {
+      ...INITIAL_STATE(resolvedActor),
+      members: parsedMembers,
+      teamCount: currentTeamCount,
+      result: Array.from({ length: currentTeamCount }, () => [] as string[]),
+    };
     const room = await createRoom('team_split', initial, { name: '팀 나누기 방' });
     router.push(`/team-split?roomId=${room.id}`);
   };
+  const handleMembersChange = async (names: string[]): Promise<boolean> => {
+    const members = normalizeNames(names);
+    if (members.length > 100 || members.some(name => name.length > 40)) {
+      setErrorBanner({ code: 'ERR_MEMBERS', message: '최대 100명, 이름은 40자까지 입력할 수 있어요.' });
+      return false;
+    }
+    setErrorBanner(null);
+    if (isRealtimeEnabled) {
+      const success = await pushRealtimeState(current => ({ nextState: { ...current, members } }));
+      if (!success) return false;
+    }
+    setMembersText(members.join('\n'));
+    return true;
+  };
   const handleTeamCountChange = async (teamCount: TeamCount) => {
     setErrorBanner(null);
+    if (teamCount > parsedMembers.length) return;
 
     if (isRealtimeEnabled) {
       await pushRealtimeState(current => ({
@@ -125,7 +146,7 @@ export function useTeamSplitView() {
   const handleSplit = async () => {
     setErrorBanner(null);
 
-    const nextMembers = parseAndNormalizeMembers(membersText);
+    const nextMembers = normalizeNames(parseNames(membersText));
     if (nextMembers.length < MIN_MEMBERS) {
       setErrorBanner({
         code: 'ERR_MIN_MEMBERS',
@@ -134,7 +155,14 @@ export function useTeamSplitView() {
       return;
     }
 
-    const nextResult = splitIntoTeams(nextMembers, currentTeamCount);
+    if (nextMembers.length < currentTeamCount) {
+      setErrorBanner({
+        code: 'ERR_TEAM_COUNT',
+        message: '팀 수보다 참여자가 적어요. 인원을 추가하거나 팀 수를 줄여주세요.',
+      });
+      return;
+    }
+    const nextResult = splitTeams(nextMembers, currentTeamCount);
     const now = Date.now();
     setMembersText(nextMembers.join('\n'));
 
@@ -201,7 +229,7 @@ export function useTeamSplitView() {
     clientActor,
     errorBanner,
     membersText,
-    setMembersText,
+    handleMembersChange,
     setHasEntered,
     realtimeState,
     roomInfo,
@@ -214,49 +242,4 @@ export function useTeamSplitView() {
     handleTeamCountChange,
     handleSplit,
   };
-}
-
-function parseAndNormalizeMembers(input: string): string[] {
-  const counts = new Map<string, number>();
-  const normalizedMembers: string[] = [];
-
-  input
-    .split(/\r?\n/)
-    .map(name => name.trim())
-    .filter(Boolean)
-    .forEach(name => {
-      const key = name.toLocaleLowerCase();
-      const nextCount = (counts.get(key) ?? 0) + 1;
-      counts.set(key, nextCount);
-
-      normalizedMembers.push(nextCount === 1 ? name : `${name} (${nextCount})`);
-    });
-
-  return normalizedMembers;
-}
-
-function splitIntoTeams(members: string[], teamCount: TeamCount): string[][] {
-  const shuffled = shuffle([...members]);
-  const base = Math.floor(shuffled.length / teamCount);
-  const remainder = shuffled.length % teamCount;
-
-  const teams: string[][] = [];
-  let cursor = 0;
-
-  for (let index = 0; index < teamCount; index += 1) {
-    const targetSize = base + (index < remainder ? 1 : 0);
-    teams.push(shuffled.slice(cursor, cursor + targetSize));
-    cursor += targetSize;
-  }
-
-  return teams;
-}
-
-function shuffle<T>(items: T[]): T[] {
-  for (let index = items.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [items[index], items[randomIndex]] = [items[randomIndex], items[index]];
-  }
-
-  return items;
 }

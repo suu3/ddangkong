@@ -17,16 +17,30 @@
 
 .nav {
   display: flex;
-  justify-content: space-between;
-  margin: auto;
-  padding: 0.5rem;
   align-items: center;
-
-  width: 100%;
-  height: 100%;
-  max-width: var(--global-max-width);
+  justify-content: flex-end;
+  height: 2.75rem;
 }
 
-.nav-spacer {
-  flex: 1;
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: 0.5rem;
+}
+
+.iconButton img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+.iconButton:focus-visible {
+  outline: 2px solid var(--chocolate07);
+  outline-offset: 1px;
+}
+.iconButton:hover {
+  background: #f8f3ec;
 }

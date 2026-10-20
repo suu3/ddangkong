@@ -1,3 +1,4 @@
+import ResultMoment from '@/components/ResultMoment';
 import UniqueText from '@/components/UniqueText';
 // import AudioPlayer from '@/components/AudioPlayer';
 // import usePlayAudio from '@/lib/hooks/usePlayAudio';
@@ -164,12 +165,14 @@ const Loading = ({ handleStep: _handleStep, resultIndex, onReplay }: LoadingProp
           </UniqueText>
         ) : (
           <>
-            <UniqueText Tag="p" font="uhbee" size="sm">
-              당첨:{' '}
-              <span data-testid="roulette-result" className="text-[var(--chocolate)]">
-                {resultText || '항목 없음'}
-              </span>
-            </UniqueText>
+            <ResultMoment label="돌림판의 선택은!">
+              <UniqueText Tag="p" font="uhbee" size="sm">
+                당첨:{' '}
+                <span data-testid="roulette-result" className="text-[var(--chocolate)]">
+                  {resultText || '항목 없음'}
+                </span>
+              </UniqueText>
+            </ResultMoment>
             <MainButton
               className="mt-6 mb-10"
               variant="contained"

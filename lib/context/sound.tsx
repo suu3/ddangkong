@@ -20,9 +20,12 @@ import {
   HOT_POTATO_HOME,
   ROULETTE_HOME,
   TEAM_SPLIT_HOME,
+  LADDER_HOME,
+  INITIAL_QUIZ_HOME,
 } from '@/lib/constants/serviceUrls';
 import muteIcon from '@/public/button/button_mute.svg';
 import playIcon from '@/public/button/button_play.svg';
+import navigationStyles from '@/components/@layout/navigation.module.css';
 
 type GlobalSoundTrack = {
   src: string;
@@ -51,7 +54,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       return { src: '/sound/bgm-result.mp3', volume: 0.28 };
     }
 
-    if ([COFFEE_HOME, ROULETTE_HOME, HOT_POTATO_HOME, TEAM_SPLIT_HOME].includes(pathname)) {
+    if (
+      [COFFEE_HOME, ROULETTE_HOME, HOT_POTATO_HOME, TEAM_SPLIT_HOME, LADDER_HOME, INITIAL_QUIZ_HOME].includes(pathname)
+    ) {
       return { src: BGM_URL, volume: 0.28 };
     }
 
@@ -166,10 +171,10 @@ export function GlobalSoundButton() {
     <button
       type="button"
       onClick={toggleMute}
-      className="flex h-11 w-11 items-center justify-center"
+      className={navigationStyles.iconButton}
       aria-label={isMuted ? '사운드 켜기' : '사운드 끄기'}
     >
-      <Image src={isMuted ? muteIcon : playIcon} alt="" width={45} height={45} />
+      <Image src={isMuted ? muteIcon : playIcon} alt="" width={32} height={32} />
     </button>
   );
 }

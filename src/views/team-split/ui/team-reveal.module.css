@@ -1,0 +1,33 @@
+.team {
+  animation: deal 650ms cubic-bezier(0.16, 1, 0.3, 1) var(--team-delay, 0ms) both;
+  transform-origin: center top;
+}
+.member {
+  animation: member-arrive 400ms ease-out calc(var(--team-delay, 0ms) + var(--member-delay, 0ms) + 180ms) both;
+}
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(22px) rotate(-3deg) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes member-arrive {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .team,
+  .member {
+    animation: none;
+  }
+}

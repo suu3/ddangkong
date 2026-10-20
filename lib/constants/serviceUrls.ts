@@ -13,3 +13,7 @@ export const HOT_POTATO_HOME = '/hot-potato';
 
 //team split
 export const TEAM_SPLIT_HOME = '/team-split';
+
+export const LADDER_HOME = '/ladder';
+
+export const INITIAL_QUIZ_HOME = '/initial-quiz';

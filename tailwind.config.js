@@ -3,18 +3,12 @@
 //https://poiemaweb.com/tailwind
 module.exports = {
   content: [
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
     './domains/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    colors: {
-      chocolate07: 'var(--chocolate07, #3d3131)',
-      chocolate06: 'var(--chocolate06, #493b3b)',
-      chocolate05: 'var(--chocolate05, #5a4949)',
-      milkChocolate: 'var(--milk-chocolate, #655049)',
-      white: '#fff',
-    },
     fontFamily: {
       pretendard: 'Pretendard-Regular',
       uhbee: 'UhBeeTokki',
@@ -22,6 +16,15 @@ module.exports = {
       sans: 'PartialSansKR-Regular',
     },
     extend: {
+      colors: {
+        chocolate: 'var(--chocolate07, #3d3131)',
+        chocolate07: 'var(--chocolate07, #3d3131)',
+        chocolate06: 'var(--chocolate06, #493b3b)',
+        chocolate05: 'var(--chocolate05, #5a4949)',
+        milkChocolate: 'var(--milk-chocolate, #655049)',
+        white: '#fff',
+      },
+
       // backgroundImage: {
       //   'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       //   'gradient-conic':

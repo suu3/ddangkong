@@ -7,11 +7,10 @@ import styles from './navigation.module.css';
 
 const Navigation = () => (
   <header className={styles['header']}>
-    <Link href={MAIN}>
+    <Link href={MAIN} className={styles.iconButton}>
       <Image src={homeIcon} width={32} height={32} alt="메인 화면으로 돌아가기" />
     </Link>
     <nav className={styles['nav']}>
-      <div className={styles['nav-spacer']} />
       <GlobalSoundButton />
     </nav>
   </header>

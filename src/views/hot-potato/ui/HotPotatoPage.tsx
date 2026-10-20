@@ -2,8 +2,8 @@
 import { Suspense } from 'react';
 
 import Image from 'next/image';
+import ResultMoment from '@/components/ResultMoment';
 import MainButton from '@/components/button/MainButton';
-import Tooltip from '@/components/Tooltip';
 import UniqueText from '@/components/UniqueText';
 import { hasRealtimeConfig, roomErrorMessage } from '@/src/entities/room';
 import { RoomSharePanel } from '@/src/widgets/room-share';
@@ -51,20 +51,16 @@ function HotPotatoPageContent() {
           </UniqueText>
           <div className="relative mt-8 w-full max-w-[20rem]">
             <Image
-              src="/hot-potato/bomb.png"
-              alt="폭탄 돌리기 메인 일러스트"
+              src="/hot-potato/bomb-v2.png"
+              alt="폭탄 돌리기 캐릭터"
               width={320}
               height={320}
+              className="mx-auto h-full w-full object-contain"
               priority
-              className="relative mx-auto w-full max-w-[16rem] animate-[float_4.2s_ease-in-out_infinite]"
             />
           </div>
-          <div className="relative mt-10 w-full max-w-[15rem]">
-            <div className="absolute left-1/2 top-[calc(-100%)] -translate-x-1/2 -translate-y-2">
-              <Tooltip className="animate-bounce" visible>
-                Click !
-              </Tooltip>
-            </div>
+          <p className="mt-4 text-sm text-milkChocolate">두근두근, 내 차례엔 터지지 마!</p>
+          <div className="relative mt-8 w-full max-w-[15rem]">
             <MainButton onClick={() => setHasEntered(true)} variant="contained" color="chocolate">
               시작하기
             </MainButton>
@@ -191,11 +187,11 @@ function HotPotatoPageContent() {
             <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4">
               <div className="mx-auto h-56 w-56">
                 <Image
-                  src="/hot-potato/bomb.png"
-                  alt="Hot potato bomb character"
+                  src="/hot-potato/bomb-v2.png"
+                  alt="폭탄 돌리기 캐릭터"
                   width={320}
                   height={320}
-                  className="h-full w-full object-contain"
+                  className="mx-auto h-full w-full object-contain"
                   priority
                 />
               </div>
@@ -231,9 +227,28 @@ function HotPotatoPageContent() {
 
           {roomState.game.status === 'ended' && (
             <section className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="text-center text-2xl font-bold text-emerald-700">
-                당첨: {winnerPlayer?.nickname ?? '알 수 없음'} 🎉
-              </p>
+              <ResultMoment
+                label={
+                  roomState.game.reason === 'insufficient_players' ? '이번 라운드는 여기까지' : '앗, 폭탄의 주인공은!'
+                }
+              >
+                {roomState.game.reason !== 'insufficient_players' && (
+                  <div className="mx-auto w-40">
+                    <Image
+                      src="/hot-potato/bomb-v2.png"
+                      alt=""
+                      width={160}
+                      height={160}
+                      className="mx-auto h-auto w-full"
+                    />
+                  </div>
+                )}
+                <p className="text-center text-2xl font-bold">
+                  {roomState.game.reason === 'insufficient_players'
+                    ? '라운드 종료'
+                    : `당첨: ${winnerPlayer?.nickname ?? '알 수 없음'}`}
+                </p>
+              </ResultMoment>
               {roomState.game.reason === 'insufficient_players' && (
                 <>
                   <p className="mt-2 text-center text-sm text-red-700">인원이 부족해 게임이 종료되었습니다.</p>

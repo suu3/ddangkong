@@ -11,6 +11,7 @@ import { copyCurrentURL } from '@/lib/utils/clipboard';
 import { COFFEE_HOME } from '@/lib/constants/serviceUrls';
 import coffeeImage from '@/public/coffee/result.svg';
 import walletImage from '@/public/coffee/wallet.svg';
+import ResultMoment from '@/components/ResultMoment';
 import linkIcon from '@/public/button/button_link.svg';
 import refreshIcon from '@/public/button/button_refresh.svg';
 import downloadIcon from '@/public/button/button_download.svg';
@@ -35,27 +36,29 @@ function CoffeeResultContent() {
   }, [muted, setMuted]);
 
   return (
-    <div className="p-[2.33rem]" ref={screenRef}>
-      <UniqueText Tag="p" size="lg" font="uhbee" className="text-center mb-2">
-        오늘의 커피는
-      </UniqueText>
-      <UniqueText Tag="h1" size="lg" font="sans" className="text-center">
-        <strong className="text-milkChocolate">{boom}번</strong> 당첨됐어요
-      </UniqueText>
+    <div className="px-4 py-8" ref={screenRef}>
+      <ResultMoment label="오늘의 커피 요정은?">
+        <UniqueText Tag="p" size="lg" font="uhbee" className="text-center mb-2">
+          오늘의 커피는
+        </UniqueText>
+        <UniqueText Tag="h1" size="lg" font="sans" className="text-center">
+          <strong className="mb-2 block text-[3rem] text-milkChocolate">{boom}번</strong>
+          당첨됐어요
+        </UniqueText>
 
-      <div className="mt-6 mb-[3.16rem] w-[18.5rem] h-[24.125rem] relative">
-        <Image
-          loading="eager"
-          className="absolute w-full h-full"
-          src={coffeeImage}
-          priority
-          alt="실망한 커피"
-          width={296}
-          height={386}
-        />
-        <Image className="absolute bottom-0 animate-bounce" width={97} height={136} src={walletImage} alt="지갑 커피" />
-      </div>
-      <div className="flex m-auto justify-evenly">
+        <div className="relative mx-auto mt-6 mb-6 w-full max-w-[18.5rem] aspect-[296/386]">
+          <Image src={coffeeImage} priority alt="실망한 커피" fill className="object-contain" />
+          <Image
+            src={walletImage}
+            alt="지갑 커피"
+            width={97}
+            height={136}
+            className="absolute bottom-0 w-1/3 h-auto motion-safe:animate-bounce"
+          />
+        </div>
+        <p className="mt-3 text-sm text-milkChocolate">한 잔의 행운을 나눠주세요 ☕</p>
+      </ResultMoment>
+      <div className="flex mx-auto mt-8 justify-evenly">
         <MainButton variant="icon" onClick={() => router.push(COFFEE_HOME)}>
           <Image src={refreshIcon} className="w-4 h-4" width={48} height={48} alt="처음으로 돌아가기 버튼" />
         </MainButton>
