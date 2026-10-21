@@ -1,3 +1,4 @@
+import {safeRead,safeRemove} from '../../../shared/lib/browser-storage';
 const ACTOR_STORAGE_KEY = 'realtime:actor-id';
 const ACTOR_ROTATED_KEY = 'realtime:actor-rotated';
 
@@ -29,10 +30,10 @@ const markActorRotated = (previousActor: string, nextActor: string) => {
 export const consumeActorRotationNotice = () => {
   if (typeof window === 'undefined') return false;
 
-  const raw = window.localStorage.getItem(ACTOR_ROTATED_KEY);
+  const raw = safeRead(ACTOR_ROTATED_KEY);
   if (!raw) return false;
 
-  window.localStorage.removeItem(ACTOR_ROTATED_KEY);
+  safeRemove(ACTOR_ROTATED_KEY);
   return true;
 };
 
@@ -93,3 +94,4 @@ export const getServerActor = async () => {
     return getOrCreateLocalActor();
   }
 };
+

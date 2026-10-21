@@ -1,12 +1,13 @@
+import { createRelay, applyRelayCommand, advanceRelayDeadline, projectRelay, type RelayPrivateState } from '../../../src/shared/lib/drawing-relay';
 import { DurableObject } from 'cloudflare:workers';
 import {
   GAME_TYPES,
-  GameState,
-  GameType,
+  type GameState,
+  type GameType,
   MAX_MESSAGE_BYTES,
   ROOM_TTL_MS,
-  RoomSnapshot,
-  ServerEvent,
+  type RoomSnapshot,
+  type ServerEvent,
   isRecord,
   parseClientEvent,
   validActor,
@@ -48,7 +49,8 @@ const hash = async (value: string) =>
   Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))), n =>
     n.toString(16).padStart(2, '0')
   ).join('');
-const publicRoom = ({ hostActorId: _host, ...room }: StoredRoom): RoomSnapshot => room;
+const publicRoom = ({ hostActorId: _host, ...room }: StoredRoom, actor: string | null = null): RoomSnapshot =>
+  room.gameType === 'drawing_relay' ? { ...room, state: projectRelay(room.state as RelayPrivateState, actor, Date.now()) } : room;
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   if (!request.headers.get('Content-Type')?.toLowerCase().startsWith('application/json'))
     throw new HttpError('JSON_REQUIRED', 415);
@@ -95,9 +97,12 @@ export default {
         const body = await readJson(request);
         if (!GAME_TYPES.includes(body.gameType as GameType) || !validActor(body.actorId))
           throw new HttpError('INVALID_ROOM');
-        validateState(body.gameType as GameType, body.state);
-        if (body.state.revision !== 0) throw new HttpError('INVALID_REVISION');
-        if ((body.gameType === 'team_split' || body.gameType === 'hot_potato') && body.state.hostId !== body.actorId)
+        if (body.gameType === 'drawing_relay') {
+          body.state = createRelay(body.actorId as string, Date.now());
+          body.maxCapacity = 10;
+        } else validateState(body.gameType as GameType, body.state);
+        if ((body.state as GameState).revision !== 0) throw new HttpError('INVALID_REVISION');
+        if ((body.gameType === 'team_split' || body.gameType === 'hot_potato') && (body.state as GameState).hostId !== body.actorId)
           throw new HttpError('INVALID_HOST');
         if (body.name !== undefined && (typeof body.name !== 'string' || body.name.length < 1 || body.name.length > 30))
           throw new HttpError('INVALID_NAME');
@@ -193,6 +198,13 @@ export class RoomDurableObject extends DurableObject<Env> {
     for (const ws of this.ctx.getWebSockets())
       if ((ws.deserializeAttachment() as Attachment)?.session) this.send(ws, event);
   }
+  private broadcastRoom(room: StoredRoom, requestId: string, onlyActor?: string) {
+    for (const ws of this.ctx.getWebSockets()) {
+      const session = (ws.deserializeAttachment() as Attachment)?.session;
+      if (session && (!onlyActor || onlyActor === session.actorId))
+        this.send(ws, { v: 1, type: 'state_updated', room: publicRoom(room, session.actorId), requestId });
+    }
+  }
   private presence() {
     const members = new Map<string, { actorId: string; presence: { cardIndex: number | null } }>();
     for (const ws of this.ctx.getWebSockets()) {
@@ -210,10 +222,12 @@ export class RoomDurableObject extends DurableObject<Env> {
   }
   private async schedule(room: StoredRoom) {
     const game = room.state.game as { status?: string; endsAtMs?: number } | undefined;
-    const deadline =
+    let deadline =
       room.gameType === 'hot_potato' && game?.status === 'running' && typeof game.endsAtMs === 'number'
         ? Math.min(Date.parse(room.expiresAt), game.endsAtMs)
         : Date.parse(room.expiresAt);
+    if (room.gameType === 'drawing_relay' && room.state.phase === 'playing' && typeof room.state.deadlineMs === 'number')
+      deadline = Math.min(deadline, room.state.deadlineMs);
     const authenticationDeadlines = this.ctx
       .getWebSockets()
       .filter(ws => ws.readyState === 1)
@@ -246,7 +260,7 @@ export class RoomDurableObject extends DurableObject<Env> {
             [`session:${await hash(secret)}`]: { actorId: room.hostActorId, role: 'host' },
           });
           await this.ctx.storage.setAlarm(now + ROOM_TTL_MS);
-          return json({ room: publicRoom(room), token: secret, actorId: room.hostActorId, role: 'host' }, 201);
+          return json({ room: publicRoom(room, room.hostActorId), token: secret, actorId: room.hostActorId, role: 'host' }, 201);
         });
       }
       const room = await this.active();
@@ -254,6 +268,7 @@ export class RoomDurableObject extends DurableObject<Env> {
       if (path === '/join') {
         await readJson(request);
         return this.ctx.blockConcurrencyWhile(async () => {
+          if (room.gameType === 'drawing_relay' && room.state.phase !== 'lobby') return errorResponse('GAME_STARTED', 409);
           const sessions = await this.ctx.storage.list({ prefix: 'session:' });
           const actors = new Set(
             this.ctx
@@ -266,7 +281,7 @@ export class RoomDurableObject extends DurableObject<Env> {
           const actorId = `anon-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
           const secret = token();
           await this.ctx.storage.put(`session:${await hash(secret)}`, { actorId, role: 'member' });
-          return json({ room: publicRoom(room), token: secret, actorId, role: 'member' });
+          return json({ room: publicRoom(room, actorId), token: secret, actorId, role: 'member' });
         });
       }
       if (path === '/connect') {
@@ -307,12 +322,32 @@ export class RoomDurableObject extends DurableObject<Env> {
           attachment.session = session;
           ws.serializeAttachment(attachment);
           await this.schedule(room);
-          this.send(ws, { v: 1, type: 'snapshot', room: publicRoom(room), ...session });
+          this.send(ws, { v: 1, type: 'snapshot', room: publicRoom(room, session.actorId), ...session });
           this.presence();
           return;
         }
         const session = attachment.session;
         if (!session) throw new HttpError('ROOM_SESSION_REQUIRED', 403);
+        if (room.gameType === 'drawing_relay') {
+          const advanced = advanceRelayDeadline(room.state as RelayPrivateState, Date.now());
+          if (advanced !== room.state) {
+            room.state = advanced;
+            await this.ctx.storage.put('room', room);
+            await this.schedule(room);
+            this.broadcastRoom(room, 'server-timeout');
+          }
+          if (event.type !== 'presence_update') {
+            if (event.type !== 'participant_command' || event.command.kind !== 'drawing_relay.command')
+              throw new HttpError('MUTATION_NOT_ALLOWED');
+            const action = event.command.action;
+            const next = applyRelayCommand(room.state as RelayPrivateState, session.actorId, action, Date.now());
+            room.state = next;
+            await this.ctx.storage.put('room', room);
+            await this.schedule(room);
+            this.broadcastRoom(room, event.requestId, action.kind === 'draft' ? session.actorId : undefined);
+            return;
+          }
+        }
         if (event.type === 'presence_update') {
           attachment.presence = { cardIndex: event.presence.cardIndex };
           ws.serializeAttachment(attachment);
@@ -371,6 +406,7 @@ export class RoomDurableObject extends DurableObject<Env> {
     this.presence();
   }
   async alarm() {
+    await this.ctx.blockConcurrencyWhile(async () => {
     const room = await this.stored();
     if (room && Date.now() < Date.parse(room.expiresAt)) {
       for (const ws of this.ctx.getWebSockets()) {
@@ -378,6 +414,14 @@ export class RoomDurableObject extends DurableObject<Env> {
         if (!attachment.session && Date.now() >= attachment.connectedAt + 10000) {
           this.send(ws, { v: 1, type: 'error', code: 'ROOM_SESSION_REQUIRED' });
           ws.close(4003, 'authentication timeout');
+        }
+      }
+      if (room.gameType === 'drawing_relay') {
+        const next = advanceRelayDeadline(room.state as RelayPrivateState, Date.now());
+        if (next !== room.state) {
+          room.state = next;
+          await this.ctx.storage.put('room', room);
+          this.broadcastRoom(room, 'server-timeout');
         }
       }
       const game = room.state.game as any;
@@ -405,5 +449,7 @@ export class RoomDurableObject extends DurableObject<Env> {
     this.broadcast({ v: 1, type: 'room_expired' });
     for (const ws of this.ctx.getWebSockets()) ws.close(4001, 'ROOM_EXPIRED');
     await this.ctx.storage.deleteAll();
+    });
   }
 }
+

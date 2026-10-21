@@ -148,10 +148,7 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 1.5rem 0.75rem;
-  border: 1px solid #ded1c2;
-  background: #fffcf7;
-  border-radius: 1.5rem;
+  padding: 1.5rem 0;
   animation: card-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .initials {

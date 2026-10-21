@@ -19,7 +19,8 @@
     "twa:init": "cd android && pnpm dlx @bubblewrap/cli@1.27.0 init --manifest=https://ddangkong.suulab.xyz/manifest.json --directory=.",
     "twa:build": "pwsh -NoProfile -File scripts/build-android.ps1",
     "twa:update": "cd android && pnpm dlx @bubblewrap/cli@1.27.0 update --manifest=./twa-manifest.json --skipVersionUpgrade",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:relay": "node scripts/test-drawing-relay.mjs"
   },
   "dependencies": {
     "@netlify/plugin-nextjs": "^5.15.8",

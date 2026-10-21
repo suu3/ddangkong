@@ -1,7 +1,7 @@
 import {
-  GameState,
-  GameType,
-  ParticipantCommand,
+  type GameState,
+  type GameType,
+  type ParticipantCommand,
   isRecord,
   validActor,
   validCard,
@@ -172,3 +172,4 @@ export function applyCommand(
   } else fail('MUTATION_NOT_ALLOWED');
   return s;
 }
+

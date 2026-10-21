@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
+import {safeRead,safeWrite,safeRemove} from '@/src/shared/lib/browser-storage';
 import MainButton from '@/components/button/MainButton';
 import { buildActorAliasMap, consumeActorRotationNotice, getActorAlias } from '@/src/entities/room';
 import { assertJoinableRoom, getGameLabel, normalizeRoomId, RealtimeGameType } from '@/src/entities/room';
@@ -177,7 +178,7 @@ export default function RoomSharePanel({
     if (!localActor || localActor === 'guest') return;
 
     const lockKey = `active-room:${gameType}:${localActor}`;
-    window.localStorage.setItem(lockKey, JSON.stringify({ roomId, updatedAt: Date.now() }));
+    safeWrite(lockKey, JSON.stringify({ roomId, updatedAt: Date.now() }));
 
     const onStorage = (event: StorageEvent) => {
       if (event.key !== lockKey) return;
@@ -194,9 +195,9 @@ export default function RoomSharePanel({
 
     return () => {
       window.removeEventListener('storage', onStorage);
-      const currentLock = parseRoomLock(window.localStorage.getItem(lockKey));
+      const currentLock = parseRoomLock(safeRead(lockKey));
       if (currentLock?.roomId === roomId) {
-        window.localStorage.removeItem(lockKey);
+        safeRemove(lockKey);
       }
     };
   }, [gameType, localActor, roomId, router]);
@@ -451,3 +452,4 @@ export default function RoomSharePanel({
     </>
   );
 }
+

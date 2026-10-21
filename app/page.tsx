@@ -4,12 +4,25 @@ import Image from 'next/image';
 import bombLogo from '@/public/hot-potato/bomb-v2.png';
 import coffeeLogo from '@/public/logos/games/coffee.svg';
 import rouletteLogo from '@/public/logos/games/roulette.svg';
+import drawingRelayLogo from '@/public/logos/games/drawing-relay.svg';
 import quizLogo from '@/public/logos/games/initial-quiz.svg';
 import ladderLogo from '@/public/logos/games/ladder.svg';
 import teamSplitLogo from '@/public/split-team/main-v2.png';
 import { COFFEE_HOME, HOT_POTATO_HOME, ROULETTE_HOME, TEAM_SPLIT_HOME } from '@/lib/constants/serviceUrls';
 
 const games = [
+  {
+    category: 'party',
+    link: '/drawing-relay',
+    title: '낙서 이어달리기',
+    image: <Image src={drawingRelayLogo} width={120} height={120} alt="낙서 이어달리기" />,
+    badges: [
+      { label: 'NEW', tone: 'rose' as const },
+      { label: '4~10명 · 각자 휴대폰', tone: 'blue' as const },
+      { label: '실시간 공유 가능', tone: 'amber' as const },
+    ],
+    description: '문장을 그림으로, 그림을 문장으로 전해요. 마지막에 엉뚱하게 달라진 이야기를 함께 펼쳐보세요.',
+  },
   {
     category: 'penalty',
     link: COFFEE_HOME,
@@ -129,3 +142,4 @@ export default function Main() {
     </div>
   );
 }
+

@@ -41,7 +41,7 @@ function HotPotatoPageContent() {
     showIntro,
   } = useHotPotatoView();
   return (
-    <div className="relative px-4 pb-28 pt-10">
+    <div className="relative pb-28 pt-10">
       {showIntro && (
         <section className="relative mx-auto flex max-w-xl flex-col items-center justify-center text-center">
           <UniqueText Tag="h1" font="sans" size="lg" className="relative mt-4 text-center text-chocolate">
@@ -69,7 +69,7 @@ function HotPotatoPageContent() {
       )}
 
       {!showIntro && (
-        <div className="mx-auto max-w-xl rounded-2xl border border-chocolate/20 bg-white p-5 shadow-sm">
+        <div className="mx-auto w-full max-w-xl">
           <UniqueText Tag="h1" font="sans" size="lg" className="text-center text-chocolate">
             폭탄
             <br />
@@ -89,7 +89,7 @@ function HotPotatoPageContent() {
             </div>
           )}
 
-          <section className="mt-5 rounded-xl border border-gray-200 p-4">
+          <section className="mt-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-800">참가자</h2>
               <span className="text-xs text-gray-500">{effectivePlayers.length}명 참여 중</span>
@@ -140,7 +140,7 @@ function HotPotatoPageContent() {
               </div>
             )}
             {roomId && clientActor === roomState.hostId && roomState.game.status !== 'running' && (
-              <div className="mt-4 rounded-lg border border-gray-200 p-3">
+              <div className="mt-4">
                 <p className="text-sm font-semibold text-gray-800">라운드 설정 (진행자)</p>
                 <div className="mt-2 flex gap-2">
                   {DURATION_OPTIONS.map(option => {
@@ -184,7 +184,7 @@ function HotPotatoPageContent() {
           </section>
 
           {roomState.game.status === 'running' && (
-            <section className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <section className="mt-5">
               <div className="mx-auto h-56 w-56">
                 <Image
                   src="/hot-potato/bomb-v2.png"
@@ -226,7 +226,7 @@ function HotPotatoPageContent() {
           )}
 
           {roomState.game.status === 'ended' && (
-            <section className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <section className="mt-5">
               <ResultMoment
                 label={
                   roomState.game.reason === 'insufficient_players' ? '이번 라운드는 여기까지' : '앗, 폭탄의 주인공은!'
@@ -270,7 +270,7 @@ function HotPotatoPageContent() {
           )}
 
           {roomState.game.history.length > 0 && roomState.game.status !== 'running' && (
-            <section className="mt-5 rounded-xl border border-gray-200 p-4">
+            <section className="mt-5">
               <h2 className="text-lg font-semibold text-gray-800">지난 라운드</h2>
               <ul className="mt-3 space-y-2 text-sm">
                 {[...roomState.game.history].reverse().map(entry => (

@@ -1,10 +1,10 @@
 import { realtimeRequest, isRoomSnapshot, RealtimeError } from '../../../shared/api/realtime-client';
-import { RoomSnapshot } from '../../../shared/api/realtime-protocol';
-import { saveSession, RoomSession } from './session';
+import type { RoomSnapshot } from '../../../shared/api/realtime-protocol';
+import { saveSession, type RoomSession } from './session';
 import { roomErrorMessage } from '../model/messages';
 import { getServerActor } from '../lib/clientActor';
 
-export type RealtimeGameType = 'coffee' | 'roulette' | 'hot_potato' | 'team_split';
+export type RealtimeGameType = 'coffee' | 'roulette' | 'hot_potato' | 'team_split' | 'drawing_relay';
 
 /** 방 생성 후 이 시간이 지나면 만료된 방으로 취급합니다. (DB 정리 정책과 동일한 값 유지) */
 export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
@@ -38,6 +38,7 @@ export class RealtimeRoomError extends Error {
 }
 
 export const getGameLabel = (gameType: RealtimeGameType) => {
+  if (gameType === 'drawing_relay') return '낙서 이어달리기';
   if (gameType === 'coffee') return '커피 내기';
   if (gameType === 'roulette') return '룰렛';
   if (gameType === 'hot_potato') return '폭탄 돌리기';
@@ -97,19 +98,20 @@ export const isRoomExpired = (createdAt: string, now = Date.now()) => {
   return now - createdAtMs > ROOM_TTL_MS;
 };
 
+let memoryCreateLog: number[] = [];
 const readCreateLog = (): number[] => {
   if (typeof window === 'undefined') return [];
 
   try {
     const raw = window.localStorage.getItem(RATE_LIMIT_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return memoryCreateLog;
 
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
 
     return parsed.filter((item): item is number => typeof item === 'number');
   } catch {
-    return [];
+    return memoryCreateLog;
   }
 };
 
@@ -126,7 +128,9 @@ const assertCreateRateLimit = () => {
     throw new RealtimeRoomError('ERR_RATE_LIMITED', `방을 너무 자주 만들었어요. ${waitMin}분 뒤에 다시 시도해 주세요.`);
   }
 
-  window.localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify([...recent, now]));
+  memoryCreateLog = [...recent, now];
+  try { window.localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(memoryCreateLog)); }
+  catch { /* Server rate limiting remains authoritative when storage is blocked. */ }
 };
 
 export async function createRoom<T>(
@@ -135,7 +139,7 @@ export async function createRoom<T>(
   options?: { name?: string; maxCapacity?: number }
 ) {
   assertCreateRateLimit();
-  const actorId = await getServerActor();
+  const actorId = await getServerActor().catch(() => `anon-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`);
   try {
     const response = await realtimeRequest<RoomSession & { room: RoomSnapshot<T> }>('/rooms', {
       gameType,
@@ -167,3 +171,4 @@ export async function assertJoinableRoom(roomId: string, gameType: RealtimeGameT
     );
   }
 }
+

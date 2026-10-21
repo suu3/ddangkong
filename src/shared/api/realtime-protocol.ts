@@ -1,4 +1,5 @@
-export type GameType = 'coffee' | 'roulette' | 'team_split' | 'hot_potato';
+import { parseRelayCommand, type RelayCommand } from '../lib/drawing-relay';
+export type GameType = 'coffee' | 'roulette' | 'team_split' | 'hot_potato' | 'drawing_relay';
 export type GameState = Record<string, unknown> & { revision: number; lastActor: string | null };
 export interface RoomSnapshot<T = GameState> {
   id: string;
@@ -15,6 +16,7 @@ export interface RoomMember {
 }
 export type ConnectionStatus = 'disabled' | 'connecting' | 'connected' | 'reconnecting' | 'expired' | 'error';
 export type ParticipantCommand =
+  | { kind: 'drawing_relay.command'; action: RelayCommand }
   | { kind: 'coffee.select'; cardIndex: number | null }
   | { kind: 'hot_potato.join'; nickname: string; isReady: boolean }
   | { kind: 'hot_potato.rename'; nickname: string }
@@ -42,7 +44,7 @@ export const validActor = (value: unknown): value is string =>
   typeof value === 'string' && /^anon-[a-zA-Z0-9-]{8,64}$/.test(value);
 export const validRoomId = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-export const GAME_TYPES: GameType[] = ['coffee', 'roulette', 'team_split', 'hot_potato'];
+export const GAME_TYPES: GameType[] = ['coffee', 'roulette', 'team_split', 'hot_potato', 'drawing_relay'];
 export const ROOM_TTL_MS = 86_400_000;
 export const MAX_MESSAGE_BYTES = 65_536;
 
@@ -60,6 +62,10 @@ export function parseClientEvent(value: unknown): ClientEvent {
     return value as ClientEvent;
   if (value.type === 'participant_command' && isRecord(value.command)) {
     const command = value.command;
+    if (command.kind === 'drawing_relay.command') {
+      parseRelayCommand(command.action);
+      return value as ClientEvent;
+    }
     if (command.kind === 'coffee.select' && validCard(command.cardIndex)) return value as ClientEvent;
     if (command.kind === 'hot_potato.pass') return value as ClientEvent;
     if (command.kind === 'hot_potato.ready' && typeof command.isReady === 'boolean') return value as ClientEvent;
@@ -74,3 +80,4 @@ export function parseClientEvent(value: unknown): ClientEvent {
   }
   throw new Error('INVALID_MESSAGE');
 }
+

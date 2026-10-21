@@ -1,9 +1,9 @@
 import {
-  ClientEvent,
-  ConnectionStatus,
-  GameState,
-  RoomSnapshot,
-  ServerEvent,
+  type ClientEvent,
+  type ConnectionStatus,
+  type GameState,
+  type RoomSnapshot,
+  type ServerEvent,
   isRecord,
   validRevision,
 } from './realtime-protocol';
@@ -54,7 +54,7 @@ export function isRoomSnapshot(value: unknown): value is RoomSnapshot {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
-    ['coffee', 'roulette', 'hot_potato', 'team_split'].includes(String(value.gameType)) &&
+    ['coffee', 'roulette', 'hot_potato', 'team_split', 'drawing_relay'].includes(String(value.gameType)) &&
     typeof value.name === 'string' &&
     Number.isSafeInteger(value.maxCapacity) &&
     typeof value.createdAt === 'string' &&
@@ -257,3 +257,4 @@ export class RealtimeSocket {
     this.rejectPending('CONNECTION_LOST');
   }
 }
+

@@ -3,6 +3,14 @@ export const roomErrorMessage = (code: string | null) => {
   const messages: Record<string, string> = {
     ROOM_NOT_FOUND_OR_EXPIRED: '방을 찾을 수 없거나 만료된 링크예요. 새 방을 만들어 주세요.',
     ROOM_EXPIRED: '방을 찾을 수 없거나 만료된 링크예요. 새 방을 만들어 주세요.',
+    GAME_STARTED: '이미 시작한 방이에요. 다음 게임에 함께해 주세요.',
+    NOT_READY: '4명 이상 모두 준비되면 시작할 수 있어요.',
+    STALE_TURN: '다음 차례로 넘어갔어요. 현재 화면을 확인해 주세요.',
+    TURN_EXPIRED: '시간이 끝나 저장된 내용으로 전달됐어요.',
+    INVALID_DRAWING: '그림이 너무 복잡해요. 되돌리기로 조금 줄여 주세요.',
+    INVALID_CONTENT: '문장은 100자 이내로 적어 주세요.',
+    INVALID_NICKNAME: '닉네임은 1~20자로 적어 주세요.',
+    NOT_A_PLAYER: '닉네임을 적고 먼저 참가해 주세요.',
     ROOM_FULL: '방 정원이 가득 찼어요.',
     ROOM_RATE_LIMITED: '방을 너무 자주 만들었어요. 10분 뒤에 다시 시도해 주세요.',
     HOST_PERMISSION_REQUIRED: '방을 만든 진행자만 조작할 수 있어요.',
@@ -17,3 +25,4 @@ export const roomErrorMessage = (code: string | null) => {
   };
   return messages[code] ?? '실시간 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
 };
+

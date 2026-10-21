@@ -10,10 +10,7 @@
 }
 .setup {
   margin-top: 2rem;
-  padding: 1.25rem;
-  border: 1px solid #ded1c2;
-  border-radius: 1.5rem;
-  background: #fffcf7;
+  padding: 0;
 }
 .sectionHeading {
   display: flex;
@@ -91,10 +88,7 @@
 }
 .boardScroll {
   overflow-x: auto;
-  border: 1px solid #ded1c2;
-  border-radius: 1rem;
-  background: #fffcf7;
-  padding: 1rem 0.5rem;
+  padding: 1rem 0;
   margin-top: 1rem;
 }
 .railLabels {

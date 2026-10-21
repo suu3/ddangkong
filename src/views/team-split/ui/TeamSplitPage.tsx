@@ -41,7 +41,7 @@ function TeamSplitPageContent() {
     if (currentLastShuffledAt) resultRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' });
   }, [currentLastShuffledAt]);
   return (
-    <div className="relative px-4 pb-28 pt-10">
+    <div className="relative pb-28 pt-10">
       {showIntro ? (
         <section className="relative mx-auto flex max-w-xl flex-col items-center justify-center text-center">
           <UniqueText Tag="h1" font="sans" size="lg" className="relative mt-4 text-center text-chocolate">
@@ -65,7 +65,7 @@ function TeamSplitPageContent() {
           </div>
         </section>
       ) : (
-        <div className="mx-auto max-w-xl rounded-[2rem] border border-chocolate07 bg-white p-5 shadow-sm">
+        <div className="mx-auto w-full max-w-xl">
           <UniqueText Tag="h1" font="sans" size="lg" className="text-center text-chocolate">
             랜덤 팀
             <br />
@@ -78,7 +78,7 @@ function TeamSplitPageContent() {
             </div>
           )}
 
-          <section className="mt-5 rounded-[1.5rem] border border-chocolate07 bg-white p-4">
+          <section className="mt-5">
             <h2 className="text-lg font-semibold text-gray-800">참여자 입력</h2>
             <p className="mt-1 text-sm text-chocolate05">현재 {parsedMembers.length}명 / 최대 100명</p>
             <MemberEditor
@@ -88,7 +88,7 @@ function TeamSplitPageContent() {
             />
           </section>
 
-          <section className="mt-4 rounded-[1.5rem] border border-chocolate07 bg-white p-4">
+          <section className="mt-4">
             <h2 className="text-lg font-semibold text-gray-800">옵션</h2>
             <div className="mt-3 flex gap-2">
               {[2, 3, 4].map(option => {
@@ -137,10 +137,7 @@ function TeamSplitPageContent() {
             </div>
           </section>
 
-          <section
-            ref={resultRef}
-            className="mt-4 scroll-mt-16 rounded-[1.5rem] border border-chocolate07 bg-white p-4"
-          >
+          <section ref={resultRef} className="mt-4 scroll-mt-16">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-chocolate07">결과</h2>
               {currentLastShuffledAt && (
@@ -169,7 +166,7 @@ function TeamSplitPageContent() {
               {currentResult.map((teamMembers, index) => (
                 <div
                   key={TEAM_LABELS[index]}
-                  className={`rounded-[1.25rem] border border-chocolate07 bg-white p-3 ${currentLastShuffledAt ? revealStyles.team : ''}`}
+                  className={`py-3 ${currentLastShuffledAt ? revealStyles.team : ''}`}
                   style={{ '--team-delay': `${index * 240 + 200}ms` } as CSSProperties}
                 >
                   <p className="text-sm font-bold text-chocolate07">TEAM {TEAM_LABELS[index]}</p>
