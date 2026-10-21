@@ -8,9 +8,13 @@
 
 ## 낙서 이어달리기 그림판
 
-![그림판](drawing-relay-canvas-borderless.png)
+연필·지우개·되돌리기에 초콜릿색 선 아이콘을 추가했습니다.
+
+![그림판과 도구](drawing-relay-tools.png)
 
 ## 팀 나누기
+
+최소 인원 안내는 참여자 수 바로 아래에 표시합니다.
 
 ![팀 나누기](borderless-team-split.png)
 

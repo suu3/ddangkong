@@ -70,25 +70,26 @@ export default function MemberEditor({
       <p className="mt-2 text-xs leading-relaxed text-chocolate05">
         쉼표나 줄바꿈으로 여러 이름을 붙여넣고 추가해도 돼요. 같은 이름은 번호로 구분해요.
       </p>
-      <ul aria-label="등록된 참여자" className="mt-4 flex flex-wrap gap-2">
-        {members.map((member, index) => (
-          <li
-            key={`${index}-${member}`}
-            className="flex max-w-full items-center rounded-full border border-chocolate07/15 bg-[#f8f3ec] pl-3 text-sm"
-          >
-            <span className="break-all">{member}</span>
-            <button
-              type="button"
-              aria-label={`${member} 삭제`}
-              onClick={() => void commit(members.filter((_, i) => i !== index))}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl"
+      {members.length > 0 && (
+        <ul aria-label="등록된 참여자" className="mt-4 flex flex-wrap gap-2">
+          {members.map((member, index) => (
+            <li
+              key={`${index}-${member}`}
+              className="flex max-w-full items-center rounded-full border border-chocolate07/15 bg-[#f8f3ec] pl-3 text-sm"
             >
-              ×
-            </button>
-          </li>
-        ))}
-      </ul>
-      {!members.length && <p className="mt-3 text-sm text-chocolate05">함께할 친구를 두 명 이상 추가해주세요.</p>}
+              <span className="break-all">{member}</span>
+              <button
+                type="button"
+                aria-label={`${member} 삭제`}
+                onClick={() => void commit(members.filter((_, i) => i !== index))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <p role="status" className="sr-only">
         {saving ? '명단 저장 중' : message}
       </p>

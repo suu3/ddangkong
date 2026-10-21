@@ -81,6 +81,9 @@ function TeamSplitPageContent() {
           <section className="mt-5">
             <h2 className="text-lg font-semibold text-gray-800">참여자 입력</h2>
             <p className="mt-1 text-sm text-chocolate05">현재 {parsedMembers.length}명 / 최대 100명</p>
+            {parsedMembers.length < 2 && (
+              <p className="mt-1 text-xs text-chocolate05">함께할 친구를 두 명 이상 추가해주세요.</p>
+            )}
             <MemberEditor
               members={parsedMembers}
               disabled={Boolean(roomId) && (!isHost || live.status !== 'connected')}
