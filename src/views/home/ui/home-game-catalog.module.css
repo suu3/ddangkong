@@ -1,0 +1,52 @@
+.catalog {
+  width: 100%;
+  min-width: 0;
+  scroll-margin-top: var(--global-navigation-height);
+}
+
+.tabs {
+  position: sticky;
+  /* .main already reserves the fixed header in its scrollport padding. */
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: #fff;
+}
+
+.tab {
+  position: relative;
+  min-height: 48px;
+  padding: 0.5rem 0;
+  color: var(--milk-chocolate);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tab::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  content: '';
+}
+
+.tab[aria-selected='true'] {
+  color: var(--chocolate07);
+  font-weight: 700;
+}
+
+.tab[aria-selected='true']::after {
+  background: var(--chocolate07);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--milk-chocolate);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}

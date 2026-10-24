@@ -1,3 +1,4 @@
+import HomeGameCatalog from '@/src/views/home/ui/HomeGameCatalog';
 import GameMenu from '@/components/@layout/GameMenu';
 import UniqueText from '@/components/UniqueText';
 import Image from 'next/image';
@@ -114,32 +115,30 @@ export default function Main() {
       <UniqueText font="sans" Tag="h1" size="lg" className="my-[1.94rem]">
         심심풀이 땅콩
       </UniqueText>
-      {[
-        { id: 'penalty', title: '벌칙·추첨', description: '누가 걸릴까? 운에 맡기는 즐거운 선택' },
-        { id: 'party', title: '파티게임', description: '함께 모여 놀고, 팀을 나누고, 정답을 외쳐요' },
-      ].map(category => (
-        <section key={category.id} aria-labelledby={category.id} className="mb-10 w-full">
-          <h2 id={category.id} className="text-xl font-bold text-chocolate01">
-            {category.title}
-          </h2>
-          <p className="mb-4 mt-1 text-sm text-chocolate05">{category.description}</p>
-          <div className="grid w-full grid-cols-2 gap-4">
-            {games
-              .filter(game => game.category === category.id)
-              .map(game => (
-                <GameMenu
-                  key={game.link}
-                  link={game.link}
-                  title={game.title}
-                  image={game.image}
-                  badges={game.badges}
-                  description={game.description}
-                />
-              ))}
-          </div>
-        </section>
-      ))}
+      <HomeGameCatalog
+        categories={[
+          { id: 'penalty', title: '벌칙·추첨', description: '누가 걸릴까? 운에 맡기는 즐거운 선택' },
+          { id: 'party', title: '파티게임', description: '함께 모여 놀고, 팀을 나누고, 정답을 외쳐요' },
+        ].map(category => ({
+          ...category,
+          content: (
+            <div className="grid w-full grid-cols-2 gap-4">
+              {games
+                .filter(game => game.category === category.id)
+                .map(game => (
+                  <GameMenu
+                    key={game.link}
+                    link={game.link}
+                    title={game.title}
+                    image={game.image}
+                    badges={game.badges}
+                    description={game.description}
+                  />
+                ))}
+            </div>
+          ),
+        }))}
+      />
     </div>
   );
 }
-
