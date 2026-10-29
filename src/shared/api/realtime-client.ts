@@ -195,11 +195,19 @@ export class RealtimeSocket {
       if (
         value.type === 'room_expired' ||
         (value.type === 'error' &&
-          ['ROOM_EXPIRED', 'ROOM_NOT_FOUND_OR_EXPIRED', 'ROOM_SESSION_REQUIRED', 'ROOM_FULL'].includes(value.code))
+          [
+            'ROOM_EXPIRED',
+            'ROOM_NOT_FOUND_OR_EXPIRED',
+            'ROOM_SESSION_REQUIRED',
+            'ROOM_FULL',
+            'TOO_MANY_CONNECTIONS',
+          ].includes(value.code))
       ) {
         this.close();
         this.onStatus(
-          value.type === 'error' && ['ROOM_SESSION_REQUIRED', 'ROOM_FULL'].includes(value.code) ? 'error' : 'expired'
+          value.type === 'error' && ['ROOM_SESSION_REQUIRED', 'ROOM_FULL', 'TOO_MANY_CONNECTIONS'].includes(value.code)
+            ? 'error'
+            : 'expired'
         );
       }
     };
@@ -257,4 +265,3 @@ export class RealtimeSocket {
     this.rejectPending('CONNECTION_LOST');
   }
 }
-

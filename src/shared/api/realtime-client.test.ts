@@ -148,3 +148,22 @@ describe('room socket lifecycle', () => {
     expect(Socket.instances).toHaveLength(3);
   });
 });
+it('stops reconnecting when the server rejects excess session connections', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('WebSocket', Socket);
+  const statuses: string[] = [];
+  const client = new RealtimeSocket(
+    'https://worker.test',
+    'room-id',
+    'token',
+    () => {},
+    status => statuses.push(status)
+  );
+  client.connect();
+  Socket.instances[0].open();
+  Socket.instances[0].receive({ v: 1, type: 'error', code: 'TOO_MANY_CONNECTIONS' });
+  await vi.advanceTimersByTimeAsync(20000);
+  expect(Socket.instances).toHaveLength(1);
+  expect(statuses.at(-1)).toBe('error');
+  client.close();
+});

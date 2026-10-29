@@ -1,4 +1,10 @@
-import { createRelay, applyRelayCommand, advanceRelayDeadline, projectRelay, type RelayPrivateState } from '../../../src/shared/lib/drawing-relay';
+import {
+  createRelay,
+  applyRelayCommand,
+  advanceRelayDeadline,
+  projectRelay,
+  type RelayPrivateState,
+} from '../../../src/shared/lib/drawing-relay';
 import { DurableObject } from 'cloudflare:workers';
 import {
   GAME_TYPES,
@@ -26,9 +32,12 @@ interface StoredRoom extends RoomSnapshot {
 interface Session {
   actorId: string;
   role: 'host' | 'member';
+  // Only sessions that have never authenticated expire after one minute.
+  expiresAt?: number;
 }
 interface Attachment {
   session?: Session;
+  ipHash?: string;
   presence: { cardIndex: number | null };
   connectedAt: number;
 }
@@ -50,7 +59,9 @@ const hash = async (value: string) =>
     n.toString(16).padStart(2, '0')
   ).join('');
 const publicRoom = ({ hostActorId: _host, ...room }: StoredRoom, actor: string | null = null): RoomSnapshot =>
-  room.gameType === 'drawing_relay' ? { ...room, state: projectRelay(room.state as RelayPrivateState, actor, Date.now()) } : room;
+  room.gameType === 'drawing_relay'
+    ? { ...room, state: projectRelay(room.state as RelayPrivateState, actor, Date.now()) }
+    : room;
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   if (!request.headers.get('Content-Type')?.toLowerCase().startsWith('application/json'))
     throw new HttpError('JSON_REQUIRED', 415);
@@ -102,7 +113,10 @@ export default {
           body.maxCapacity = 10;
         } else validateState(body.gameType as GameType, body.state);
         if ((body.state as GameState).revision !== 0) throw new HttpError('INVALID_REVISION');
-        if ((body.gameType === 'team_split' || body.gameType === 'hot_potato') && (body.state as GameState).hostId !== body.actorId)
+        if (
+          (body.gameType === 'team_split' || body.gameType === 'hot_potato') &&
+          (body.state as GameState).hostId !== body.actorId
+        )
           throw new HttpError('INVALID_HOST');
         if (body.name !== undefined && (typeof body.name !== 'string' || body.name.length < 1 || body.name.length > 30))
           throw new HttpError('INVALID_NAME');
@@ -130,6 +144,13 @@ export default {
         const suffix = match[2] ?? '';
         if ((suffix === '/join' && request.method !== 'POST') || (suffix !== '/join' && request.method !== 'GET'))
           throw new HttpError('METHOD_NOT_ALLOWED', 405);
+        if (suffix === '/join' || suffix === '/connect') {
+          const ip = await hash(request.headers.get('CF-Connecting-IP') ?? 'local');
+          const limited = await env.CREATION_LIMITERS.get(env.CREATION_LIMITERS.idFromName(`${suffix}:${ip}`)).fetch(
+            new Request(`https://internal${suffix}`)
+          );
+          if (!limited.ok) throw new HttpError('REQUEST_RATE_LIMITED', 429);
+        }
         const target = new URL(`https://internal${suffix || '/snapshot'}`);
         const forwarded =
           suffix === '/join'
@@ -159,13 +180,16 @@ export default {
 };
 
 export class CreationLimiter extends DurableObject<Env> {
-  async fetch() {
+  async fetch(request: Request) {
     return this.ctx.blockConcurrencyWhile(async () => {
+      const path = new URL(request.url).pathname;
+      const windowMs = path === '/limit' ? 600000 : 60000;
+      const maxRequests = path === '/limit' ? 5 : path === '/join' ? 30 : 60;
       const now = Date.now();
-      const recent = ((await this.ctx.storage.get<number[]>('recent')) ?? []).filter(n => n > now - 600000);
-      if (recent.length >= 5) return errorResponse('ROOM_RATE_LIMITED', 429);
+      const recent = ((await this.ctx.storage.get<number[]>('recent')) ?? []).filter(n => n > now - windowMs);
+      if (recent.length >= maxRequests) return errorResponse('REQUEST_RATE_LIMITED', 429);
       await this.ctx.storage.put('recent', [...recent, now]);
-      await this.ctx.storage.setAlarm(now + 600000);
+      await this.ctx.storage.setAlarm(now + windowMs);
       return json({ ok: true });
     });
   }
@@ -226,7 +250,11 @@ export class RoomDurableObject extends DurableObject<Env> {
       room.gameType === 'hot_potato' && game?.status === 'running' && typeof game.endsAtMs === 'number'
         ? Math.min(Date.parse(room.expiresAt), game.endsAtMs)
         : Date.parse(room.expiresAt);
-    if (room.gameType === 'drawing_relay' && room.state.phase === 'playing' && typeof room.state.deadlineMs === 'number')
+    if (
+      room.gameType === 'drawing_relay' &&
+      room.state.phase === 'playing' &&
+      typeof room.state.deadlineMs === 'number'
+    )
       deadline = Math.min(deadline, room.state.deadlineMs);
     const authenticationDeadlines = this.ctx
       .getWebSockets()
@@ -260,7 +288,10 @@ export class RoomDurableObject extends DurableObject<Env> {
             [`session:${await hash(secret)}`]: { actorId: room.hostActorId, role: 'host' },
           });
           await this.ctx.storage.setAlarm(now + ROOM_TTL_MS);
-          return json({ room: publicRoom(room, room.hostActorId), token: secret, actorId: room.hostActorId, role: 'host' }, 201);
+          return json(
+            { room: publicRoom(room, room.hostActorId), token: secret, actorId: room.hostActorId, role: 'host' },
+            201
+          );
         });
       }
       const room = await this.active();
@@ -268,29 +299,59 @@ export class RoomDurableObject extends DurableObject<Env> {
       if (path === '/join') {
         await readJson(request);
         return this.ctx.blockConcurrencyWhile(async () => {
-          if (room.gameType === 'drawing_relay' && room.state.phase !== 'lobby') return errorResponse('GAME_STARTED', 409);
-          const sessions = await this.ctx.storage.list({ prefix: 'session:' });
+          if (room.gameType === 'drawing_relay' && room.state.phase !== 'lobby')
+            return errorResponse('GAME_STARTED', 409);
+          const sessions = await this.ctx.storage.list<Session>({ prefix: 'session:' });
+          for (const [key, session] of sessions) {
+            if (session.role === 'member' && session.expiresAt !== undefined && session.expiresAt <= Date.now()) {
+              await this.ctx.storage.delete(key);
+              sessions.delete(key);
+            }
+          }
           const actors = new Set(
             this.ctx
               .getWebSockets()
               .map(ws => (ws.deserializeAttachment() as Attachment)?.session?.actorId)
               .filter(Boolean)
           );
-          if (actors.size >= room.maxCapacity || sessions.size >= 200) return errorResponse('ROOM_FULL', 409);
+          if (actors.size >= room.maxCapacity) return errorResponse('ROOM_FULL', 409);
+          // Never let abandoned credentials permanently lock an otherwise empty room.
+          if (sessions.size >= 200) {
+            const unused = [...sessions].find(
+              ([, session]) => session.role === 'member' && !actors.has(session.actorId)
+            );
+            if (!unused) return errorResponse('ROOM_FULL', 409);
+            await this.ctx.storage.delete(unused[0]);
+          }
           // Identity is server-issued. Claiming the creator's public actor ID never grants its session.
           const actorId = `anon-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
           const secret = token();
-          await this.ctx.storage.put(`session:${await hash(secret)}`, { actorId, role: 'member' });
+          await this.ctx.storage.put(`session:${await hash(secret)}`, {
+            actorId,
+            role: 'member',
+            expiresAt: Date.now() + 60000,
+          });
           return json({ room: publicRoom(room, actorId), token: secret, actorId, role: 'member' });
         });
       }
       if (path === '/connect') {
         if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')
           return errorResponse('WEBSOCKET_REQUIRED', 426);
-        if (this.ctx.getWebSockets().length >= room.maxCapacity * 3) return errorResponse('TOO_MANY_CONNECTIONS', 429);
+        const ipHash = await hash(request.headers.get('CF-Connecting-IP') ?? 'local');
+        const sockets = this.ctx.getWebSockets().filter(ws => ws.readyState === 1);
+        const pendingFromIp = sockets.filter(ws => {
+          const attachment = ws.deserializeAttachment() as Attachment;
+          return !attachment.session && attachment.ipHash === ipHash;
+        });
+        if (pendingFromIp.length >= 3 || sockets.length >= room.maxCapacity * 3)
+          return errorResponse('TOO_MANY_CONNECTIONS', 429);
         const { 0: client, 1: server } = new WebSocketPair();
         this.ctx.acceptWebSocket(server);
-        server.serializeAttachment({ presence: { cardIndex: null }, connectedAt: Date.now() } satisfies Attachment);
+        server.serializeAttachment({
+          presence: { cardIndex: null },
+          connectedAt: Date.now(),
+          ipHash,
+        } satisfies Attachment);
         await this.schedule(room);
         return new Response(null, { status: 101, webSocket: client });
       }
@@ -315,10 +376,23 @@ export class RoomDurableObject extends DurableObject<Env> {
         if (event.type === 'authenticate') {
           if (attachment.session) throw new HttpError('ALREADY_AUTHENTICATED');
           const session = await this.ctx.storage.get<Session>(`session:${await hash(event.token)}`);
-          if (!session) throw new HttpError('ROOM_SESSION_REQUIRED', 403);
+          if (!session || (session.expiresAt !== undefined && session.expiresAt <= Date.now()))
+            throw new HttpError('ROOM_SESSION_REQUIRED', 403);
+          const actorConnections = this.ctx
+            .getWebSockets()
+            .filter(
+              socket =>
+                socket.readyState === 1 &&
+                (socket.deserializeAttachment() as Attachment)?.session?.actorId === session.actorId
+            );
+          if (actorConnections.length >= 3) throw new HttpError('TOO_MANY_CONNECTIONS', 429);
           const connected = this.connectedActors();
           if (!connected.has(session.actorId) && connected.size >= room.maxCapacity)
             throw new HttpError('ROOM_FULL', 409);
+          if (session.expiresAt !== undefined) {
+            delete session.expiresAt;
+            await this.ctx.storage.put(`session:${await hash(event.token)}`, session);
+          }
           attachment.session = session;
           ws.serializeAttachment(attachment);
           await this.schedule(room);
@@ -392,7 +466,15 @@ export class RoomDurableObject extends DurableObject<Env> {
       } catch (error) {
         const code = error instanceof Error ? error.message : 'INVALID_MESSAGE';
         this.send(ws, { v: 1, type: 'error', code, requestId });
-        if (['ROOM_EXPIRED', 'ROOM_NOT_FOUND_OR_EXPIRED', 'ROOM_SESSION_REQUIRED', 'ROOM_FULL'].includes(code))
+        if (
+          [
+            'ROOM_EXPIRED',
+            'ROOM_NOT_FOUND_OR_EXPIRED',
+            'ROOM_SESSION_REQUIRED',
+            'ROOM_FULL',
+            'TOO_MANY_CONNECTIONS',
+          ].includes(code)
+        )
           ws.close(4001, code);
       }
     });
@@ -407,49 +489,48 @@ export class RoomDurableObject extends DurableObject<Env> {
   }
   async alarm() {
     await this.ctx.blockConcurrencyWhile(async () => {
-    const room = await this.stored();
-    if (room && Date.now() < Date.parse(room.expiresAt)) {
-      for (const ws of this.ctx.getWebSockets()) {
-        const attachment = ws.deserializeAttachment() as Attachment;
-        if (!attachment.session && Date.now() >= attachment.connectedAt + 10000) {
-          this.send(ws, { v: 1, type: 'error', code: 'ROOM_SESSION_REQUIRED' });
-          ws.close(4003, 'authentication timeout');
+      const room = await this.stored();
+      if (room && Date.now() < Date.parse(room.expiresAt)) {
+        for (const ws of this.ctx.getWebSockets()) {
+          const attachment = ws.deserializeAttachment() as Attachment;
+          if (!attachment.session && Date.now() >= attachment.connectedAt + 10000) {
+            this.send(ws, { v: 1, type: 'error', code: 'ROOM_SESSION_REQUIRED' });
+            ws.close(4003, 'authentication timeout');
+          }
         }
-      }
-      if (room.gameType === 'drawing_relay') {
-        const next = advanceRelayDeadline(room.state as RelayPrivateState, Date.now());
-        if (next !== room.state) {
-          room.state = next;
+        if (room.gameType === 'drawing_relay') {
+          const next = advanceRelayDeadline(room.state as RelayPrivateState, Date.now());
+          if (next !== room.state) {
+            room.state = next;
+            await this.ctx.storage.put('room', room);
+            this.broadcastRoom(room, 'server-timeout');
+          }
+        }
+        const game = room.state.game as any;
+        if (room.gameType === 'hot_potato' && game?.status === 'running' && Date.now() >= game.endsAtMs) {
+          room.state = {
+            ...room.state,
+            revision: room.state.revision + 1,
+            game: {
+              ...game,
+              status: 'ended',
+              winnerUserId: game.holderUserId,
+              reason: 'timeout',
+              history: [
+                ...game.history,
+                { roundId: game.roundId, winnerUserId: game.holderUserId, endedAtMs: game.endsAtMs, reason: 'timeout' },
+              ].slice(-20),
+            },
+          };
           await this.ctx.storage.put('room', room);
-          this.broadcastRoom(room, 'server-timeout');
+          this.broadcast({ v: 1, type: 'state_updated', room: publicRoom(room), requestId: 'server-timeout' });
         }
+        await this.schedule(room);
+        return;
       }
-      const game = room.state.game as any;
-      if (room.gameType === 'hot_potato' && game?.status === 'running' && Date.now() >= game.endsAtMs) {
-        room.state = {
-          ...room.state,
-          revision: room.state.revision + 1,
-          game: {
-            ...game,
-            status: 'ended',
-            winnerUserId: game.holderUserId,
-            reason: 'timeout',
-            history: [
-              ...game.history,
-              { roundId: game.roundId, winnerUserId: game.holderUserId, endedAtMs: game.endsAtMs, reason: 'timeout' },
-            ].slice(-20),
-          },
-        };
-        await this.ctx.storage.put('room', room);
-        this.broadcast({ v: 1, type: 'state_updated', room: publicRoom(room), requestId: 'server-timeout' });
-      }
-      await this.schedule(room);
-      return;
-    }
-    this.broadcast({ v: 1, type: 'room_expired' });
-    for (const ws of this.ctx.getWebSockets()) ws.close(4001, 'ROOM_EXPIRED');
-    await this.ctx.storage.deleteAll();
+      this.broadcast({ v: 1, type: 'room_expired' });
+      for (const ws of this.ctx.getWebSockets()) ws.close(4001, 'ROOM_EXPIRED');
+      await this.ctx.storage.deleteAll();
     });
   }
 }
-

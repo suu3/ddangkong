@@ -12,6 +12,8 @@ export const roomErrorMessage = (code: string | null) => {
     INVALID_NICKNAME: '닉네임은 1~20자로 적어 주세요.',
     NOT_A_PLAYER: '닉네임을 적고 먼저 참가해 주세요.',
     ROOM_FULL: '방 정원이 가득 찼어요.',
+    TOO_MANY_CONNECTIONS: '접속한 탭이 너무 많아요. 다른 탭을 닫고 다시 접속해 주세요.',
+    REQUEST_RATE_LIMITED: '접속 요청이 너무 많아요. 1분 뒤에 다시 시도해 주세요.',
     ROOM_RATE_LIMITED: '방을 너무 자주 만들었어요. 10분 뒤에 다시 시도해 주세요.',
     HOST_PERMISSION_REQUIRED: '방을 만든 진행자만 조작할 수 있어요.',
     MUTATION_NOT_ALLOWED: '지금은 이 동작을 할 수 없어요. 최신 상태를 확인해 주세요.',
@@ -25,4 +27,3 @@ export const roomErrorMessage = (code: string | null) => {
   };
   return messages[code] ?? '실시간 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
 };
-
